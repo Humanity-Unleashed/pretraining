@@ -1,0 +1,6 @@
+data/
+uv.lock
+.venv/
+*.egg-info
+.ipynb_checkpoints/
+
