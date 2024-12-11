@@ -4,3 +4,5 @@ pydantic
 requests
 lm-format-enforcer
 pandas
+accelerate
+#flash-attn

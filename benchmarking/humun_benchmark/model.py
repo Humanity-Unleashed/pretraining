@@ -13,16 +13,17 @@ log = logging.getLogger(__name__)
 
 # parent class for all models
 class Model:
-    def __init__(self, label: str, location: str):
+    def __init__(self, label: str):
         self.label = label
-        self.location = location  # local path or huggingface repo ID
-        self.model = self._load_model()
+        self._load_model()
 
     def _load_model(self):
         raise NotImplementedError("'_load_model' must be implemented in subclass.")
 
-    def _format_response(self, response: Any) -> str:
-        raise NotImplementedError("`_format_response` must be implemented in subclass.")
-
-    def inference(self, prompt_instance: Prompt) -> Any:
+    def inference(
+        self, prompt_instance: Prompt, n_runs: int, temperature: float
+    ) -> None:
+        """
+        in-place method that appends inference responses to Prompt instance
+        """
         raise NotImplementedError("`inference` must be implemented in subclass.")

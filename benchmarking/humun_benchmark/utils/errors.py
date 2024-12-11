@@ -9,6 +9,10 @@ class InferenceError(ModelError):
     pass
 
 
+class ModelLoadError(ModelError):
+    pass
+
+
 class APIStatusError(ModelError):
     def __init__(self, status: int, response: Dict[str, Any]):
         self.status = status

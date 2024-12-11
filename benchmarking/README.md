@@ -31,11 +31,21 @@ Prompt method inspired by CiK forecasting ([paper](https://arxiv.org/abs/2410.18
 
 ## Installation
 > [!Note]
-> UV is recommended to install project dependencies. Read Docs [here.](https://docs.astral.sh/uv/getting-started/features/#projects)
+> If using flash-attention-2 for attention mask configuration, see comments below to install correctly. 
 
 Using uv:
 ```bash
+# For usage see: https://docs.astral.sh/uv/getting-started/features/#projects
 uv sync 
+```
+
+Flash-attention-2 is an algorithm used to increase efficiency in parallelisation. `torch` and `setup-tools` are required prior to installation as defined in `pyproject.toml`. Though for venv builds, flash attention needs to be installed using `uv pip install flash-attn --no-build-isolation`. This also requires `nvcc` to be available and the `CUDA_HOME` path to be defined. These are sometimes not defined on lightweight servers. 
+
+To define these variables on the humun gpu server, run:
+```
+export CUDA_HOME=/usr/local/cuda
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
 ## Data download

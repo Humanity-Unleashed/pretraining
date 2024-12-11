@@ -1,5 +1,5 @@
 """
-format output using lm-format-enforcer
+restrict output tokens using lm-format-enforcer
 
 https://github.com/ServiceNow/context-is-key-forecasting/blob/main/cik_benchmark/baselines/direct_prompt.py#L99C5-L112C69
 
@@ -19,6 +19,7 @@ example output taken from direct_prompt
 import logging
 import pandas as pd
 import re
+from typing import List
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def format_timeseries_input(df: pd.DataFrame, forecast_split: float) -> str:
     history_section = f"<history>\n{history_formatted}\n</history>"
 
     forecast_formatted = "\n".join(
-        f"({row['date']}, {row['value']})" for _, row in forecast.iterrows()
+        f"({row['date']}, x)" for _, row in forecast.iterrows()
     )
     forecast_section = f"<forecast>\n{forecast_formatted}\n</forecast>"
 

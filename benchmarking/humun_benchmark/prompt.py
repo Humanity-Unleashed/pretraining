@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
 import pandas as pd
 from humun_benchmark.utils.format import format_timeseries_input
@@ -8,20 +8,24 @@ from humun_benchmark.utils.format import format_timeseries_input
 class Prompt(BaseModel):
     task: str
     timeseries: pd.DataFrame
+    forecast_split: float = 0.2
     context: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     prompt_text: Optional[str] = None
-    responses: Optional[Union[Dict[str, Any], str]] = None
+    responses: List[str] = []
 
     class Config:
         arbitrary_types_allowed = True  # Allow pd.DataFrame as a field
 
 
 class InstructPrompt(Prompt):
+    results_df: Optional[pd.DataFrame] = None
+
     def __init__(
         self,
         task: str,
         timeseries: pd.DataFrame,
+        forecast_split: float = 0.2,
         context: str = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
@@ -29,31 +33,42 @@ class InstructPrompt(Prompt):
         super().__init__(
             task=task,
             timeseries=timeseries,
+            forecast_split=forecast_split,
             context=context,
             metadata=metadata,
-            prompt_text=self._format_input(task, timeseries, context, metadata),
-            responses="Inference not run yet.",
         )
+        self.prompt_text = self._format_input()
 
-    @staticmethod
-    def _format_input(
-        task: str,
-        timeseries: pd.DataFrame,
-        context: Optional[str],
-        metadata: Optional[Dict[str, Any]],
-    ) -> str:
+    def _format_input(self) -> str:
         """
         Returns formatted input text.
         """
-        prompt_text = task
+        prompt_text = self.task
 
-        if context:
-            prompt_text += f"<context>\n{context}\n</context>\n"
-        if metadata:
-            prompt_text += f"<metadata>\n{metadata}\n</metadata>\n"
+        if self.context:
+            prompt_text += f"<context>\n{self.context}\n</context>\n"
+        if self.metadata:
+            prompt_text += f"<metadata>\n{self.metadata}\n</metadata>\n"
 
-        prompt_text += format_timeseries_input(timeseries, forecast_split=0.2)
+        prompt_text += format_timeseries_input(self.timeseries, self.forecast_split)
         return prompt_text
+
+    def merge_forecasts(self, dfs: List[pd.DataFrame]):
+        """
+        Merge forecast responses together
+        """
+        # Rename the value columns to forecast_1, forecast_2, ..., forecast_n
+        for i, df in enumerate(dfs, start=1):
+            df.rename(columns={"value": f"forecast_{i}"}, inplace=True)
+
+        # Merge all dataframes on the date column
+        merged_df = dfs[0]
+
+        if len(dfs) > 1:
+            for df in dfs[1:]:
+                merged_df = pd.merge(merged_df, df, on="date", how="outer")
+
+        self.results_df = merged_df
 
 
 class MultiModalPrompt(Prompt):
