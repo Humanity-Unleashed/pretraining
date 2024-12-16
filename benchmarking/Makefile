@@ -1,12 +1,7 @@
 .ONESHELL:
 SHELL := bash
-PYTHON := python
-PYTHONPATH := `pwd`
 
-# Directories
-ROOT := $(shell dirname $(realpath $(firstword ${MAKEFILE_LIST})))
-PARENT_ROOT := $(shell dirname ${ROOT})
-DATASET_DIR := data/fred
+PYTHON := $(shell command -v python3 || echo "not_found")
 
 .DEFAULT_GOAL := help
 
@@ -14,43 +9,35 @@ DATASET_DIR := data/fred
 .PHONY: help
 help:
 	@echo "Available targets:"
+	@echo "  install           Set up the Python virtual environment and install dependencies."
 	@echo "  dataset           Download datasets to the data/fred/ directory."
 	@echo "  model repo=<name> Download a Hugging Face model to the local cache."
-	@echo "  install           Set up the Python virtual environment and install dependencies."
 	@echo "  format            Run code formatters (black, isort)."
 
 #* Installation
 .PHONY: install
 install:
-	@if ! type pipx &>/dev/null; then \
-		echo "pipx not found. Installing pipx..."; \
-		python -m pip install --user pipx; \
-		export PATH=$$PATH:$$HOME/.local/bin; \
+	@if [ "$(PYTHON)" = "not_found" ]; then \
+		echo "Error: Python not found. Please ensure Python is installed and accessible."; \
+		exit 1; \
 	fi
-	@if ! type uv &>/dev/null; then \
-		echo "uv not found. Installing uv..."; \
-		pipx install uv; \
-	fi
-	@echo "Setting up virtual environment..."
+	@echo "Using Python: $(PYTHON)"
 	rm -rf .venv
-	python -m venv .venv
-	source .venv/bin/activate
-	type python
-	uv sync --lock --export > requirements.txt
 	uv sync
+	source .venv/bin/activate
 	@echo "Environment setup complete."
 
-#* Datasets
+#* Dataset Management
 .PHONY: dataset
 dataset:
-	mkdir -p $(DATASET_DIR)
-	wget -O $(DATASET_DIR)/unemployment_counties.csv https://huggingface.co/datasets/yatsbm/FRED/resolve/main/unemployment/unemployment_counties.csv?download=true || \
+	mkdir -p data/fred
+	wget -O data/fred/unemployment_counties.csv https://huggingface.co/datasets/yatsbm/FRED/resolve/main/unemployment/unemployment_counties.csv?download=true || \
 		{ echo "Error: Failed to download unemployment_counties.csv."; exit 1; }
-	wget -O $(DATASET_DIR)/unemployment_states.csv https://huggingface.co/datasets/yatsbm/FRED/resolve/main/unemployment/unemployment_states.csv?download=true || \
+	wget -O data/fred/unemployment_states.csv https://huggingface.co/datasets/yatsbm/FRED/resolve/main/unemployment/unemployment_states.csv?download=true || \
 		{ echo "Error: Failed to download unemployment_states.csv."; exit 1; }
 	@echo "Datasets downloaded successfully."
 
-#* Model Downloads
+#* Model Management
 .PHONY: model
 model:
 	@echo "Downloading model from Hugging Face repository: $(repo)"
@@ -58,11 +45,11 @@ model:
 		echo "Error: Please specify the 'repo' variable. Example: make model repo=EleutherAI/gpt-neo-2.7B"; \
 		exit 1; \
 	fi
-	@huggingface-cli download $(repo) --include "*.safetensors" --repo-type model || \
+	huggingface-cli download $(repo) --include "*.safetensors" --repo-type model || \
 		{ echo "Error: Failed to download model. Please check the repository name and your Hugging Face token."; exit 1; }
 	@echo "Model downloaded successfully to Hugging Face cache."
 
-#* Formatting
+#* Code Formatters
 .PHONY: format
 format:
 	@echo "Running code formatters..."
