@@ -24,7 +24,6 @@ install:
 	@echo "Using Python: $(PYTHON)"
 	rm -rf .venv
 	uv sync
-	source .venv/bin/activate
 	@echo "Environment setup complete."
 
 #* Dataset Management
