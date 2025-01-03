@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "wheel", "torch"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "humun-econ-transformer"
+description = "Training code for the economics transformer, a multimodal language time series model."
+version = "0.0.0"
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+    {name = "Humanity Unleashed Pretraining Team"},
+]
+maintainers = [
+    {name = "Rosie Zhao", email = "rosieyzh@gmail.com"},
+]
+
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+packages = { find = { where = ["."] } }
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+

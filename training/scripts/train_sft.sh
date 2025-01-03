@@ -1,0 +1,21 @@
+deepspeed --module humun_econ_transformer.train_sft \
+   --max_len 512 \
+   --dataset Open-Orca/OpenOrca \
+   --input_key question \
+   --output_key response \
+   --apply_chat_template \
+   --train_batch_size 256 \
+   --micro_train_batch_size 8 \
+   --max_samples 500000 \
+   --pretrain Qwen/Qwen2-1.5B \
+   --save_path ./checkpoint/qwen_2_sft \
+   --save_steps -1 \
+   --logging_steps 1 \
+   --eval_steps -1 \
+   --zero_stage 3 \
+   --max_epochs 1 \
+   --packing_samples \
+   --bf16 \
+   --flash_attn \
+   --learning_rate 5e-6 \
+   --gradient_checkpointing \
