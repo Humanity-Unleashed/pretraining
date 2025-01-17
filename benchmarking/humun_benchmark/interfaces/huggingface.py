@@ -7,9 +7,8 @@ LMs configured with Flash-Attention-2 for efficiency:
 """
 
 import torch
-import gc
 import re
-from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, pipeline
+from transformers import AutoTokenizer, LlamaForCausalLM, pipeline
 from lmformatenforcer import RegexParser
 from lmformatenforcer.integrations.transformers import (
     build_transformers_prefix_allowed_tokens_fn,
@@ -18,10 +17,13 @@ from humun_benchmark.model import Model
 from humun_benchmark.utils.errors import ModelError, ModelLoadError
 from humun_benchmark.utils.parse import parse_forecast_output
 from humun_benchmark.prompt import InstructPrompt
-from types import SimpleNamespace
 import logging
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
+)
 log = logging.getLogger(__name__)
+
 
 LLM_Map = {
     "llama-3.1-8b-instruct": "meta-llama/Llama-3.1-8B-Instruct",
@@ -156,7 +158,6 @@ class HuggingFace(Model):
         )
 
         # Now extract the assistant's reply
-        choices = []
         for response in pipe(
             [payload.prompt_text] * n_runs,
             max_length=10000,
@@ -171,56 +172,3 @@ class HuggingFace(Model):
         # turn text response/s into a results dataframe
         dfs = [parse_forecast_output(df) for df in payload.responses]
         payload.merge_forecasts(dfs)  # sets payload.results_df in-place
-
-    # batch/parallel inference method below -
-    #
-    # [AL:] I believe the GPU server is not configured to run things in batch at the moment.
-    # Errors received include:
-    # RuntimeError: CUDA error: peer mapping resources exhausted.
-    # Looking at `top` I noticed a few other people working on the server, though their processes weren't occupying GPU space, instead CPU. Likely just not configured yet (e.g, nvcc exists but path isn't available to users.)
-    #
-    # This thought is reinforced by the inability to install flash-attention as it doesn't have access
-    # to `nvcc` to compile kernels.
-    #
-    #
-    #
-    # @torch.inference_mode()
-    # def inference(
-    #     self, payload: InstructPrompt, n_runs: int = 1, temperature: float = 1
-    # ):
-    #     if not 0 < n_runs <= 10:
-    #         raise ModelError(f"Improper number of inference runs: {n_runs}")
-    #
-    #     # initialise for clean up later
-    #     batch_inputs, output_tokens = None, None
-    #
-    #     try:
-    #         # prepare batch inputs
-    #         inputs = self.tokenizer(payload.prompt_text, return_tensors="pt")
-    #         batch_inputs = {k: v.repeat(n_runs, 1) for k, v in inputs.items()}
-    #         batch_inputs = {k: v.to(self.model.device) for k, v in batch_inputs.items()}
-    #
-    #         log.info(f"Running inference in parallel for {n_runs} runs.")
-    #
-    #         output_tokens = self.model.generate(
-    #             **batch_inputs,
-    #             max_length=10000,
-    #             temperature=temperature,
-    #             do_sample=True,
-    #         )
-    #
-    #         # decode and store responses
-    #         formatted_responses = self.tokenizer.batch_decode(
-    #             output_tokens, skip_special_tokens=True
-    #         )
-    #         payload.responses.extend(formatted_responses)
-    #
-    #     except Exception as e:
-    #         raise ModelError(f"Inference failed: {str(e)}") from e
-    #
-    #     finally:
-    #         # cleanup GPU memory
-    #         del batch_inputs
-    #         del output_tokens
-    #         gc.collect()
-    #         torch.cuda.empty_cache()

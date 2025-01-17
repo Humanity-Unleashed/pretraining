@@ -19,7 +19,6 @@ example output taken from direct_prompt
 import logging
 import pandas as pd
 import re
-from typing import List
 
 log = logging.getLogger(__name__)
 

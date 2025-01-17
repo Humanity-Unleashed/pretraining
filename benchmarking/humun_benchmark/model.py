@@ -3,12 +3,7 @@ Parent class for model interfaces.
 
 """
 
-import logging
-from typing import Any
 from humun_benchmark.prompt import Prompt
-
-
-log = logging.getLogger(__name__)
 
 
 # parent class for all models

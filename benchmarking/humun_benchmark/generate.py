@@ -7,11 +7,12 @@ import logging
 import pickle
 
 from humun_benchmark.interfaces.huggingface import HuggingFace
-from humun_benchmark.utils.parse import parse_forecast_output
 from humun_benchmark.utils.tasks import NUMERICAL
 from humun_benchmark.prompt import InstructPrompt
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
+)
 log = logging.getLogger(__name__)
 
 
