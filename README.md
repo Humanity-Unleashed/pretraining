@@ -15,7 +15,5 @@ Pretraining project notion board: https://www.notion.so/humanity-unleashed/Pretr
 \[Aiden\]  TO-DOs re: zero-shot benchmarks (12/23) 
 * set up to use server datasets repo
 * implement multiple models (instruct LLMs and general timeseries e.g. ARIMA)
-* create metrics functions (MAE, CRPS etc.)
-* unit tests
-* create a makefile (?) for systematic inference generation / benchmarking using a config
+* refactor CRPS to be calculated on multiple timeseries (currently just multiple forecasts of the same timeseries)
 
