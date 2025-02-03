@@ -9,22 +9,9 @@ PYTHON := $(shell command -v python3 || echo "not_found")
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  install           Set up the Python virtual environment and install dependencies."
 	@echo "  dataset           Download datasets to the data/fred/ directory."
 	@echo "  model repo=<name> Download a Hugging Face model to the local cache."
 	@echo "  format            Run code formatters (black, isort)."
-
-#* Installation
-.PHONY: install
-install:
-	@if [ "$(PYTHON)" = "not_found" ]; then \
-		echo "Error: Python not found. Please ensure Python is installed and accessible."; \
-		exit 1; \
-	fi
-	@echo "Using Python: $(PYTHON)"
-	rm -rf .venv
-	uv sync
-	@echo "Environment setup complete."
 
 #* Dataset Management
 .PHONY: dataset

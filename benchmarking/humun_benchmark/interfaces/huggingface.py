@@ -6,18 +6,25 @@ LMs configured with Flash-Attention-2 for efficiency:
     - https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2
 """
 
-import torch
+import logging
 import re
-from transformers import AutoTokenizer, LlamaForCausalLM, pipeline
+
+import torch
 from lmformatenforcer import RegexParser
 from lmformatenforcer.integrations.transformers import (
     build_transformers_prefix_allowed_tokens_fn,
 )
+from transformers import (
+    AutoTokenizer,
+    LlamaForCausalLM,
+    pipeline,
+    AutoModelForCausalLM,
+)
+
 from humun_benchmark.model import Model
+from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.errors import ModelError, ModelLoadError
 from humun_benchmark.utils.parse import parse_forecast_output
-from humun_benchmark.prompt import InstructPrompt
-import logging
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
@@ -25,6 +32,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
+# some models can be retrieved with just their name instead of repo
 LLM_Map = {
     "llama-3.1-8b-instruct": "meta-llama/Llama-3.1-8B-Instruct",
     "ministral-8b-instruct-2410": "mistralai/Ministral-8B-Instruct-2410",
@@ -35,46 +43,38 @@ DEFAULT_BOS_TOKEN = "<s>"
 DEFAULT_UNK_TOKEN = "<unk>"
 
 
-def path_from_map(llm):
+def get_model_and_tokenizer(llm):
     """
-    Returns LLM repo via mapping or logs that it's not recognised.
+    Returns
+
     """
-    if llm in LLM_Map:
-        return LLM_Map[llm]
+    # check if repo has been provided in model name
+    if "/" not in llm:
+        if "llama" in llm:
+            llm = "meta-llama/" + llm
+        elif "istral" in llm:
+            llm = "mistralai/" + llm
+        elif "qwen" in llm:
+            llm = "Qwen/"
 
-    # attempt mapping by assuming repo name was provided
-    attempt = llm.split("/")[-1].tolower()
-    if attempt in LLM_Map[attempt]:
-        return LLM_Map[attempt]
-
-    log.info("LLM name provided not in `LLM_Map` mapping.")
-    return llm
-
-
-def get_model_and_tokenizer(llm: str):
-    """
-    Returns tokenizer and model from HF interface.
-
-    Params:
-        llm (str): model name
-    """
-
-    llm_path = path_from_map(llm)
-
+    # case-specific model/tokenizer loaders
     try:
-        log.info(f"Loading model from Hugging Face repo: {llm_path}")
-
-        # can make custom configs per language model via if-elses
-        tokenizer = AutoTokenizer.from_pretrained(
-            llm_path, padding_side="left", torch_dtype=torch.float16
-        )
-        model = LlamaForCausalLM.from_pretrained(
-            llm_path,
-            # load everything to one GPU - peer mapping currently not configured
-            device_map={"": "cuda:4"},
-            torch_dtype=torch.float16,
-        )
-        model.eval()
+        if "llama-3" in llm:
+            tokenizer = AutoTokenizer.from_pretrained(
+                llm, padding_side="left", legacy=False
+            )
+            model = LlamaForCausalLM.from_pretrained(
+                llm,
+                device_map="auto",  # {"": "cuda:4"},
+                torch_dtype=torch.float16,
+                attn_implementation="flash_attention_2",
+            )
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                llm,
+                device_map="auto",
+                torch_dtype=torch.float16,
+            )
 
         # configure special tokens
         special_tokens_dict = dict()
@@ -89,17 +89,17 @@ def get_model_and_tokenizer(llm: str):
         tokenizer.pad_token = tokenizer.eos_token
 
         log.info("Model and tokenizer loaded successfully.")
-        return model, tokenizer
 
     except Exception as e:
         raise ModelLoadError(f"Failed to load model from Hugging Face: {e}")
+
+    return model.eval(), tokenizer
 
 
 class HuggingFace(Model):
     """
     Configures and handles Hugging Face LLM inference.
-
-    Contains logic from CiK's DirectPrompt"""
+    """
 
     def _load_model(self):
         self.model, self.tokenizer = get_model_and_tokenizer(self.label)
@@ -128,7 +128,6 @@ class HuggingFace(Model):
             Generates a regular expression to force the model output
             to satisfy the required format and provide values for
             all required timestamps
-
             """
             timestamp_regex = "".join(
                 [
@@ -143,7 +142,7 @@ class HuggingFace(Model):
             task="text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
-            device_map={"": "cuda:4"},  # device mapping issues on server
+            device_map="auto",  # {"": "cuda:4"},  # device mapping issues on server
         )
 
         # Build a regex parser with the generated regex
