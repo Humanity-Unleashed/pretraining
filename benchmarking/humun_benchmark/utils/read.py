@@ -3,7 +3,6 @@ import logging
 from typing import List, Dict
 import pandas as pd
 import os
-import warnings
 
 log = logging.getLogger(__name__)
 
@@ -20,9 +19,7 @@ def read_data(file_paths: List) -> Dict[str, pd.DataFrame]:
         elif ext == ".json":
             df = pd.read_json(file_path)
         else:
-            warnings.warn(
-                f"Unsupported file format: {file_path}. Skipping.", UserWarning
-            )
+            log.warning(f"Unsupported file format: {file_path}. Skipping.")
             continue
 
         dataframes[os.path.basename(file_path)] = df
@@ -32,6 +29,7 @@ def read_data(file_paths: List) -> Dict[str, pd.DataFrame]:
 
 def read_config(config_path: str) -> dict:
     if not os.path.exists(config_path):
+        log.exception(f"Config file not found: {config_path}")
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
     with open(config_path, "r") as file:

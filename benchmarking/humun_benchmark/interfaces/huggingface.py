@@ -165,3 +165,31 @@ class HuggingFace(Model):
         # turn text response/s into a results dataframe
         dfs = [parse_forecast_output(df) for df in payload.responses]
         payload.merge_forecasts(dfs)  # sets payload.results_df in-place
+
+    def serialise(self):
+        """
+        Serialize model configuration details for logging.
+        Returns dict with model name, architecture details and tokenizer info.
+        """
+        config = self.model.config.to_dict()
+
+        model_info = {
+            "model_name": self.label,
+            "model_architecture": self.model.__class__.__name__,
+            "model_config": config,
+            # # Select key config params
+            # "vocab_size": config.get("vocab_size"),
+            # "hidden_size": config.get("hidden_size"),
+            # "num_attention_heads": config.get("num_attention_heads"),
+            # "num_hidden_layers": config.get("num_hidden_layers"),
+            # "max_position_embeddings": config.get("max_position_embeddings"),
+            "tokenizer": {
+                "tokenizer_class": self.tokenizer.__class__.__name__,
+                "vocab_size": len(self.tokenizer),
+                "model_max_length": self.tokenizer.model_max_length,
+                "padding_side": self.tokenizer.padding_side,
+                "truncation_side": getattr(self.tokenizer, "truncation_side", None),
+            },
+        }
+
+        return model_info

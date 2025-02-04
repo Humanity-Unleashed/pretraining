@@ -1,5 +1,4 @@
 import os
-import warnings
 import logging
 from dotenv import load_dotenv
 
@@ -17,10 +16,7 @@ def check_env(env_path=".env", vars=ENV_VARS):
 
     missing = [var for var in vars if os.getenv(var) is None]
     if missing:
-        warnings.warn(
-            f"Missing environment variables: {missing}. Check your setup.",
-            UserWarning,
-        )
+        log.warning(f"Missing environment variables: {missing}. Check your setup.")
 
 
 def check_config():

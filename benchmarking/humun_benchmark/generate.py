@@ -5,22 +5,44 @@ from datetime import datetime
 import torch
 import logging
 import pickle
+from pprint import pformat
 
 from humun_benchmark.interfaces.huggingface import HuggingFace
 from humun_benchmark.utils.tasks import NUMERICAL
 from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.checks import check_env
+from humun_benchmark.utils.logging import setup_logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
-)
-log = logging.getLogger(__name__)
+# Load .env and check needed variables exist
+check_env()
+
+# Timestamp for output files
+time = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# Sets up logging config and give a filename
+setup_logging(f"{os.getenv('RESULTS_STORE')}/{time}.log")
+
+log = logging.getLogger("humun_benchmark.generate")
+
+"""
+To log:
+
+* model / inference config
+* datasets used
+* time taken for inference
+* hardware set up
+* pyspy or similar for hardware usage stats over time
+* resulting metrics
+
+"""
 
 
 def main(args):
     """
     Note: Currently only handles one timeseries to run inference on.
         - pd.DataFrame with columns ['date', 'value']
+
+    Turn into generate() which can be passed args individually from __main__, or called from another program. This would allow for a per-model inference to be generated.
     """
 
     # Ensure the output directory exists
@@ -48,8 +70,12 @@ def main(args):
     # Run inference
     llm.inference(payload=prompt, n_runs=args.batch_size)
 
+    # Serialise the model to logs
+    # TODO: add model results conditionally in serialise()
+    model_info = llm.serialise()
+    log.info(f"Model Info:\n {pformat(model_info)}")
+
     # Save the prompt with responses as a pickle file
-    time = datetime.now().strftime("%Y%m%d_%H%M%S")
     save_file = os.path.join(args.output_path, f"{time}.pkl")
     with open(save_file, "wb") as f:
         pickle.dump(prompt, f)
@@ -57,22 +83,7 @@ def main(args):
     log.info(f"Prompt saved to {save_file}")
 
 
-# create a folder with datetime on it
-# {modelname.split('/')[-1]}.json
-#
-# store log
-# store results:
-# [{ "file" : "path/to/file.json",
-#    "values": [],
-#    "forecasts" : [[..], [..]],
-#    "metrics" : { "mae" : x, "crps" : x, etc. },
-#    "config" : timesteps, split, size of timestep etc. },
-#   {...} ]
-
 if __name__ == "__main__":
-    # Load .env and check needed variables exist
-    check_env()
-
     parser = argparse.ArgumentParser(
         description="Generate model outputs using a Hugging Face LLM."
     )
