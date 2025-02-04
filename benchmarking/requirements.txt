@@ -7,4 +7,4 @@ pandas
 accelerate
 scipy
 python-dotenv
-#flash-attn
+setuptools

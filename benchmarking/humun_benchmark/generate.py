@@ -9,6 +9,7 @@ import pickle
 from humun_benchmark.interfaces.huggingface import HuggingFace
 from humun_benchmark.utils.tasks import NUMERICAL
 from humun_benchmark.prompt import InstructPrompt
+from humun_benchmark.utils.checks import check_env
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
@@ -21,6 +22,7 @@ def main(args):
     Note: Currently only handles one timeseries to run inference on.
         - pd.DataFrame with columns ['date', 'value']
     """
+
     # Ensure the output directory exists
     os.makedirs(args.output_path, exist_ok=True)
     log.info(f"Ensured the output directory exists: {args.output_path}")
@@ -55,7 +57,22 @@ def main(args):
     log.info(f"Prompt saved to {save_file}")
 
 
+# create a folder with datetime on it
+# {modelname.split('/')[-1]}.json
+#
+# store log
+# store results:
+# [{ "file" : "path/to/file.json",
+#    "values": [],
+#    "forecasts" : [[..], [..]],
+#    "metrics" : { "mae" : x, "crps" : x, etc. },
+#    "config" : timesteps, split, size of timestep etc. },
+#   {...} ]
+
 if __name__ == "__main__":
+    # Load .env and check needed variables exist
+    check_env()
+
     parser = argparse.ArgumentParser(
         description="Generate model outputs using a Hugging Face LLM."
     )
@@ -75,8 +92,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_path",
         type=str,
-        default="data/prompts/",
-        help="Directory to save the output pickle files. Default: data/prompts/",
+        default=os.getenv("RESULTS_STORE"),
+        help="Directory to save the output pickle files. Default: workspace/pretraining/benchmarks/",
     )
     parser.add_argument(
         "--batch_size",
@@ -87,4 +104,5 @@ if __name__ == "__main__":
 
     # Parse the arguments and run the main function
     args = parser.parse_args()
+
     main(args)

@@ -7,7 +7,7 @@ A tool to systematically test LLMs with time-series forecasting and policy NLP t
 
 ## Description
 
-Prompt method inspired by CiK forecasting ([paper](https://arxiv.org/abs/2410.18959))[github](https://github.com/ServiceNow/context-is-key-forecasting/blob/main/cik_benchmark/baselines/direct_prompt.py).
+Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/abs/2410.18959) | [github](https://github.com/ServiceNow/context-is-key-forecasting/blob/main/cik_benchmark/baselines/direct_prompt.py) ].
 
 
 ## Time-series Data
@@ -21,10 +21,8 @@ Prompt method inspired by CiK forecasting ([paper](https://arxiv.org/abs/2410.18
 > [!Note]
 > If using flash-attention-2 for attention mask configuration, see comments below to install correctly. 
 
-Using uv:
 ```bash
-# For usage see: https://docs.astral.sh/uv/getting-started/features/#projects
-uv sync 
+make install
 ```
 
 ## Data download
@@ -37,6 +35,10 @@ make dataset
 
 ## Environment Variables 
 
-requires `HF_CACHE`, `DATA_STORE`, `MODEL_STORE`
+requires `HF_HOME`, `HF_TOKEN_PATH`, `DATA_STORE`, `MODEL_STORE`
+
+In order to keep auth tokens in user directories.
+`HF_STORED_TOKENS_PATH` follows `HF_TOKEN_PATH`
+ see: https://github.com/huggingface/huggingface_hub/blob/main/src/huggingface_hub/constants.py#L150
 
 

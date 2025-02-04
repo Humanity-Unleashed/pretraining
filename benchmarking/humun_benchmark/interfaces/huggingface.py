@@ -32,12 +32,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-# some models can be retrieved with just their name instead of repo
-LLM_Map = {
-    "llama-3.1-8b-instruct": "meta-llama/Llama-3.1-8B-Instruct",
-    "ministral-8b-instruct-2410": "mistralai/Ministral-8B-Instruct-2410",
-}
-
 DEFAULT_EOS_TOKEN = "</s>"
 DEFAULT_BOS_TOKEN = "<s>"
 DEFAULT_UNK_TOKEN = "<unk>"
@@ -55,7 +49,7 @@ def get_model_and_tokenizer(llm):
         elif "istral" in llm:
             llm = "mistralai/" + llm
         elif "qwen" in llm:
-            llm = "Qwen/"
+            llm = "Qwen/" + llm
 
     # case-specific model/tokenizer loaders
     try:
@@ -75,6 +69,7 @@ def get_model_and_tokenizer(llm):
                 device_map="auto",
                 torch_dtype=torch.float16,
             )
+            tokenizer = AutoTokenizer.from_pretrained(llm)
 
         # configure special tokens
         special_tokens_dict = dict()
@@ -89,11 +84,10 @@ def get_model_and_tokenizer(llm):
         tokenizer.pad_token = tokenizer.eos_token
 
         log.info("Model and tokenizer loaded successfully.")
+        return model.eval(), tokenizer
 
     except Exception as e:
         raise ModelLoadError(f"Failed to load model from Hugging Face: {e}")
-
-    return model.eval(), tokenizer
 
 
 class HuggingFace(Model):

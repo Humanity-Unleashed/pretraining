@@ -4,8 +4,6 @@ from typing import List, Dict
 import pandas as pd
 import os
 import warnings
-from dotenv import dotenv_values, set_key
-from humun_benchmark.utils.globals import ENV_VARS
 
 log = logging.getLogger(__name__)
 
@@ -40,31 +38,3 @@ def read_config(config_path: str) -> dict:
         config = json.load(file)
 
     return config
-
-
-def read_env(env_path=".env"):
-    """
-    reads in default .env file and replaces on system if non-existent.
-    """
-    if not os.path.exists(env_path):
-        log.warning(f"{env_path} not found. Skipping environment setup.")
-        return
-
-    env_values = dotenv_values(env_path)
-    replaced = []
-
-    for key, value in env_values.items():
-        if key not in os.environ:
-            os.environ[key] = value  # Properly set the environment variable
-            set_key(env_path, key, value)  # Persist in the .env file
-            replaced.append(key)
-
-    if replaced:
-        log.info(
-            "Environment variables replaced that were missing:\n"
-            + "\n".join(f"* {var}" for var in replaced)
-        )
-
-    # Debugging: Print the values of environment variables
-    for var in ENV_VARS:
-        log.info(f"{var} = {os.getenv(var)}")

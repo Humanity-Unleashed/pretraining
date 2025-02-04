@@ -13,9 +13,16 @@ help:
 	@echo "  model repo=<name> Download a Hugging Face model to the local cache."
 	@echo "  format            Run code formatters (black, isort)."
 
+#* Install
+.PHONY: install 
+install:
+	uv sync
+	uv pip install flash-attn --no-build-isolation
+	source .venv/bin/activate
+
 #* Dataset Management
-.PHONY: dataset
-dataset:
+.PHONY: mock-dataset
+mock-dataset:
 	mkdir -p data/fred
 	wget -O data/fred/unemployment_counties.csv https://huggingface.co/datasets/yatsbm/FRED/resolve/main/unemployment/unemployment_counties.csv?download=true || \
 		{ echo "Error: Failed to download unemployment_counties.csv."; exit 1; }
