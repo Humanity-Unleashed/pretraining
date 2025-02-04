@@ -1,98 +1,88 @@
 import argparse
+import json
 import pandas as pd
 import os
 from datetime import datetime
-import torch
 import logging
-import pickle
 from pprint import pformat
-
 from humun_benchmark.interfaces.huggingface import HuggingFace
 from humun_benchmark.utils.tasks import NUMERICAL
 from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.checks import check_env
 from humun_benchmark.utils.logging import setup_logging
 
-# Load .env and check needed variables exist
+# load .env and check needed variables exist
 check_env()
 
-# Timestamp for output files
+# timestamp for output files
 time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-# Sets up logging config and give a filename
-setup_logging(f"{os.getenv('RESULTS_STORE')}/{time}.log")
 
-log = logging.getLogger("humun_benchmark.generate")
-
-"""
-To log:
-
-* model / inference config
-* datasets used
-* time taken for inference
-* hardware set up
-* pyspy or similar for hardware usage stats over time
-* resulting metrics
-
-"""
-
-
-def main(args):
+def generate(
+    datasets: list[str] = ["data/fred/test.csv"],
+    model: str = "llama-3.1-8b-instruct",
+    output_path: str = os.getenv("RESULTS_STORE"),
+    batch_size: int = 1,
+) -> None:
     """
-    Note: Currently only handles one timeseries to run inference on.
-        - pd.DataFrame with columns ['date', 'value']
-
-    Turn into generate() which can be passed args individually from __main__, or called from another program. This would allow for a per-model inference to be generated.
+    Generate forecasts from a model and save results.
     """
 
-    # Ensure the output directory exists
-    os.makedirs(args.output_path, exist_ok=True)
-    log.info(f"Ensured the output directory exists: {args.output_path}")
+    # make a timestep folder for outputs to be written to
+    output_path = output_path or os.getenv("RESULTS_STORE")
+    output_path = os.path.join(output_path, time)
+    # make sure it exists
+    os.makedirs(output_path, exist_ok=True)
 
-    # Check if GPU is available
-    if torch.cuda.is_available():
-        log.info("CUDA is available.")
-    else:
-        log.warning("CUDA is not available.")
+    # sets up logging config and gives a filename
+    setup_logging(f"{output_path}/benchmark.log")
+    log = logging.getLogger("humun_benchmark.generate")
 
-    # Create model instance
-    llm = HuggingFace(args.model)
-    log.info(f"Model instance created for model: {args.model}")
+    params = {
+        "datasets": datasets,
+        "model": model,
+        "output_path": output_path,
+        "batch_size": batch_size,
+    }
+    log.info(f"Run Parameters:\n{pformat(params)}")
 
-    # Load input data
-    timeseries_df = pd.read_csv(args.input_path)
-    log.info(f"Input data loaded from: {args.input_path}")
+    # create model instance and log config
+    llm = HuggingFace(model)
+    log.info(f"Model Info:\n{pformat(llm.serialise())}")
 
-    # Create prompt instance
-    prompt = InstructPrompt(task=NUMERICAL, timeseries=timeseries_df)
-    log.info("Prompt instance created.")
+    results = {}
+    for dataset in datasets:
+        # load input data
+        timeseries_df = pd.read_csv(dataset)
 
-    # Run inference
-    llm.inference(payload=prompt, n_runs=args.batch_size)
+        # create prompt instance
+        prompt = InstructPrompt(task=NUMERICAL, timeseries=timeseries_df)
 
-    # Serialise the model to logs
-    # TODO: add model results conditionally in serialise()
-    model_info = llm.serialise()
-    log.info(f"Model Info:\n {pformat(model_info)}")
+        # run inference
+        llm.inference(payload=prompt, n_runs=batch_size)
 
-    # Save the prompt with responses as a pickle file
-    save_file = os.path.join(args.output_path, f"{time}.pkl")
-    with open(save_file, "wb") as f:
-        pickle.dump(prompt, f)
+        # store results
+        results[dataset] = prompt.results_df.to_json(
+            orient="records", date_format="iso"
+        )
 
-    log.info(f"Prompt saved to {save_file}")
+    if results:
+        json_path = f"{output_path}/{llm.label}.json"
+        with open(json_path, "w") as f:
+            json.dump(results, f)
+        log.info(f"Results saved to {json_path}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate model outputs using a Hugging Face LLM."
     )
-
     parser.add_argument(
-        "--input_path",
+        "--datasets",
         type=str,
-        default="data/fred/test.csv",
-        help="Path to the input CSV file. Default: data/fred/test.csv",
+        nargs="+",
+        default=["data/fred/test.csv"],
+        help="Path/s to the input CSV file. Default: [data/fred/test.csv]",
     )
     parser.add_argument(
         "--model",
@@ -112,8 +102,5 @@ if __name__ == "__main__":
         default=1,
         help="Number of runs for inference (n_runs). Default: 1",
     )
-
-    # Parse the arguments and run the main function
     args = parser.parse_args()
-
-    main(args)
+    generate(**vars(args))

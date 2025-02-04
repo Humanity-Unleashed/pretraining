@@ -59,7 +59,7 @@ def get_model_and_tokenizer(llm):
             )
             model = LlamaForCausalLM.from_pretrained(
                 llm,
-                device_map="auto",  # {"": "cuda:4"},
+                device_map="auto",
                 torch_dtype=torch.float16,
                 attn_implementation="flash_attention_2",
             )
@@ -107,7 +107,8 @@ class HuggingFace(Model):
         constrained_decoding=True,
         **kwargs,
     ):
-        """Appends inference output to `payload.responses`"""
+        """Appends inference output to `payload.responses` and the resultant
+        dataframe to `payload.results_df`"""
 
         if not 0 < n_runs <= 20:
             raise ModelError(f"Improper number of inference runs: {n_runs}")
@@ -136,7 +137,7 @@ class HuggingFace(Model):
             task="text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
-            device_map="auto",  # {"": "cuda:4"},  # device mapping issues on server
+            device_map="auto",
         )
 
         # Build a regex parser with the generated regex
@@ -154,6 +155,7 @@ class HuggingFace(Model):
         for response in pipe(
             [payload.prompt_text] * n_runs,
             max_length=10000,
+            truncation=True,
             temperature=temperature,
             prefix_allowed_tokens_fn=prefix_function,
             batch_size=n_runs,
@@ -176,13 +178,20 @@ class HuggingFace(Model):
         model_info = {
             "model_name": self.label,
             "model_architecture": self.model.__class__.__name__,
-            "model_config": config,
-            # # Select key config params
-            # "vocab_size": config.get("vocab_size"),
-            # "hidden_size": config.get("hidden_size"),
-            # "num_attention_heads": config.get("num_attention_heads"),
-            # "num_hidden_layers": config.get("num_hidden_layers"),
-            # "max_position_embeddings": config.get("max_position_embeddings"),
+            "model_config": {
+                "attention_implementation": config.get("attn_implementation"),
+                "_name_or_path": config.get("_name_or_path"),
+                "architectures": config.get("architectures"),
+                "bos_token_id": config.get("bos_token_id"),
+                "bos_token": self.tokenizer.bos_token_id,
+                "eos_token_id": config.get("eos_token_id"),
+                "eos_token": self.tokenizer.eos_token_id,
+                "pad_token_id": config.get("pad_token_id"),
+                "pad_token": self.tokenizer.pad_token_id,
+                "torch_dtype": config.get("torch_dtype"),
+                "transformers_version": config.get("transformers_version"),
+                "vocab_size": config.get("transformers_version"),
+            },
             "tokenizer": {
                 "tokenizer_class": self.tokenizer.__class__.__name__,
                 "vocab_size": len(self.tokenizer),

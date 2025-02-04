@@ -17,6 +17,22 @@ class Prompt(BaseModel):
     class Config:
         arbitrary_types_allowed = True  # Allow pd.DataFrame as a field
 
+    def serialise(self) -> Dict[str, Any]:
+        """
+        Serialize prompt configuration and data for logging.
+        """
+        info = (
+            {
+                "task": self.task,
+                "forecast_split": self.forecast_split,
+                "context": self.context,
+                "metadata": self.metadata,
+                "forecasts": len(self.responses),
+            },
+        )
+
+        return info
+
 
 class InstructPrompt(Prompt):
     results_df: Optional[pd.DataFrame] = None
