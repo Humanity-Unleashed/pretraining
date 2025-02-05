@@ -1,7 +1,7 @@
-import pandas as pd
 import numpy as np
-from scipy.stats import rankdata
+import pandas as pd
 from scipy.integrate import quad
+from scipy.stats import rankdata
 
 
 def crps_single(obs, forecasts):

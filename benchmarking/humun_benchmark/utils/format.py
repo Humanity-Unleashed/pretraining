@@ -17,8 +17,9 @@ example output taken from direct_prompt
 """
 
 import logging
-import pandas as pd
 import re
+
+import pandas as pd
 
 log = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ Parent class for model interfaces.
 """
 
 import logging
+
 from humun_benchmark.prompt import Prompt
 
 logger = logging.getLogger(__name__)

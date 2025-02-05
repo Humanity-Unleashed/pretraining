@@ -1,5 +1,6 @@
-import pandas as pd
 import re
+
+import pandas as pd
 
 
 def parse_forecast_output(response: str) -> pd.DataFrame:

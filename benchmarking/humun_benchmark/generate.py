@@ -1,15 +1,17 @@
 import argparse
 import json
-import pandas as pd
+import logging
 import os
 from datetime import datetime
-import logging
 from pprint import pformat
+
+import pandas as pd
+
 from humun_benchmark.interfaces.huggingface import HuggingFace
-from humun_benchmark.utils.tasks import NUMERICAL
 from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.checks import check_env
 from humun_benchmark.utils.logging import setup_logging
+from humun_benchmark.utils.tasks import NUMERICAL
 
 # load .env and check needed variables exist
 check_env()

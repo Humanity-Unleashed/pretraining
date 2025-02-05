@@ -15,15 +15,18 @@ Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/a
 * use n_steps instead of forecast_split,
 * log result metrics, hardware setup + usage stats (pyviz/pyspy etc.), time elapsed, number of datasets,
 * preflight checks (hardware setup + env vars etc.) - log, warn and raise errors
-* outputs to JSON not pkl
 * stats per dataset, per model ? (can identify what types of datasets it excels at)
 * use a config file for benchmarks (.toml) ? 
 * capture tasks in notion
 * redo arima 
-* truncation warning on inference 
 * refactor CRPS to be calculated on multiple timeseries (currently just multiple forecasts of the same timeseries)
 * produce first-run table of results
 * docker file for creating a run of models + metrics (without relying on user-session being active)
+
+Metrics: 
+* test n_steps, more accurate at monthly, quarterly or yearly etc. 
+* MAE distribution across all datasets (per model)
+* token overhead - with 40+ years of monthly data, predicting 1 year, does the token overhead of providing 39+ years of data degrade performance? test vs. 10 years etc. (record n_tokens in logs)
 
 ## Time-series Data
 

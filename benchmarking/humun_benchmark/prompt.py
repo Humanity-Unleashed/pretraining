@@ -1,6 +1,8 @@
-from typing import Dict, Any, Optional, List
-from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
+from pydantic import BaseModel
+
 from humun_benchmark.utils.format import format_timeseries_input
 
 
