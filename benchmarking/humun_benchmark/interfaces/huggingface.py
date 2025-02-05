@@ -1,5 +1,5 @@
 """
-HF interface usage heavily inspired by CiK:
+Instruct prompt method inspired by CiK forecasting:
     - https://github.com/ServiceNow/context-is-key-forecasting/blob/main/cik_benchmark/baselines/hf_utils/dp_hf_api.py
 
 LMs configured with Flash-Attention-2 for efficiency:
@@ -26,9 +26,6 @@ from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.errors import ModelError, ModelLoadError
 from humun_benchmark.utils.parse import parse_forecast_output
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
-)
 log = logging.getLogger(__name__)
 
 

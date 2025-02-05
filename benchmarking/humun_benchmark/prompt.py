@@ -43,7 +43,7 @@ class InstructPrompt(Prompt):
         self,
         task: str,
         timeseries: pd.DataFrame,
-        forecast_split: float = 0.2,
+        n_timesteps: int = 12,
         context: str = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
@@ -51,7 +51,7 @@ class InstructPrompt(Prompt):
         super().__init__(
             task=task,
             timeseries=timeseries,
-            forecast_split=forecast_split,
+            n_timesteps=n_timesteps,
             context=context,
             metadata=metadata,
         )
@@ -68,7 +68,7 @@ class InstructPrompt(Prompt):
         if self.metadata:
             prompt_text += f"<metadata>\n{self.metadata}\n</metadata>\n"
 
-        prompt_text += format_timeseries_input(self.timeseries, self.forecast_split)
+        prompt_text += format_timeseries_input(self.timeseries, self.n_timesteps)
         return prompt_text
 
     def merge_forecasts(self, dfs: List[pd.DataFrame]):

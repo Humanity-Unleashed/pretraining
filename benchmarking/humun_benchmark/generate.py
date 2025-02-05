@@ -21,7 +21,7 @@ time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 def generate(
-    datasets: list[str] = ["data/fred/test.csv"],
+    datasets: list[str] = ["tests/test_data.csv"],
     model: str = "llama-3.1-8b-instruct",
     output_path: str = os.getenv("RESULTS_STORE"),
     batch_size: int = 1,
@@ -33,10 +33,9 @@ def generate(
     # make a timestep folder for outputs to be written to
     output_path = output_path or os.getenv("RESULTS_STORE")
     output_path = os.path.join(output_path, time)
-    # make sure it exists
-    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(output_path, exist_ok=True)  # makes sure folder exists
 
-    # sets up logging config and gives a filename
+    # sets up logging config and gives an output filename
     setup_logging(f"{output_path}/benchmark.log")
     log = logging.getLogger("humun_benchmark.generate")
 
@@ -59,6 +58,7 @@ def generate(
 
         # create prompt instance
         prompt = InstructPrompt(task=NUMERICAL, timeseries=timeseries_df)
+        log.info(f"Prompt Tokens Length: {len(llm.tokenizer.encode(prompt))}")
 
         # run inference
         llm.inference(payload=prompt, n_runs=batch_size)
@@ -83,8 +83,8 @@ if __name__ == "__main__":
         "--datasets",
         type=str,
         nargs="+",
-        default=["data/fred/test.csv"],
-        help="Path/s to the input CSV file. Default: [data/fred/test.csv]",
+        default=["tests/test_data.csv"],
+        help="Path/s to the input CSV file. Default: [tests/test_data.csv]",
     )
     parser.add_argument(
         "--model",
