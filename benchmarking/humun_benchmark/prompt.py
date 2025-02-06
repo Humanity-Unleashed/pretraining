@@ -10,7 +10,7 @@ from humun_benchmark.utils.format import format_timeseries_input
 class Prompt(BaseModel):
     task: str
     timeseries: pd.DataFrame
-    forecast_split: float = 0.2
+    n_timesteps: int = 12
     context: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     prompt_text: Optional[str] = None
@@ -26,7 +26,7 @@ class Prompt(BaseModel):
         info = (
             {
                 "task": self.task,
-                "forecast_split": self.forecast_split,
+                "n_timesteps": self.n_timesteps,
                 "context": self.context,
                 "metadata": self.metadata,
                 "forecasts": len(self.responses),

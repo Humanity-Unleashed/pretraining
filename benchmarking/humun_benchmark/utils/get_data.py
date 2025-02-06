@@ -132,8 +132,8 @@ def get_dataset_info(fred_data):
     series_details = []
     for series_id, data in fred_data.items():
         length = len(data["timeseries"])
-        frequency = data.get("frequency", "Unknown")
-        title = data.get("title", "Unknown")
+        frequency = data["metadata"].get("frequency", "Unknown")
+        title = data["metadata"].get("title", "Unknown")
 
         detail_str = (
             f"Series ID: {series_id}\n"

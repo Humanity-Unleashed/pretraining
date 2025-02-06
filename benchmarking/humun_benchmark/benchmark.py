@@ -13,7 +13,12 @@ from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.checks import check_env
 from humun_benchmark.utils.log_config import setup_logging
 from humun_benchmark.utils.tasks import NUMERICAL
-from humun_benchmark.utils.get_data import get_data, get_series_by_id, get_dataset_info
+from humun_benchmark.utils.get_data import (
+    get_data,
+    get_series_by_id,
+    get_dataset_info,
+    convert_array_to_df,
+)
 
 
 # load .env and check needed variables exist
@@ -71,6 +76,7 @@ def benchmark(
     }
     log.info(f"Run Parameters:\n{pformat(params)}")
 
+    log.info("Reading in Metadata and Datasets...")
     # Get data based on selector type
     if isinstance(selector, list):
         fred_data = get_series_by_id(
@@ -88,6 +94,45 @@ def benchmark(
 
     # Log data info: series selected
     log.info(get_dataset_info(fred_data))
+
+    # for model in models
+    for model in models:
+        # create model instance and log config
+        llm = HuggingFace(model)
+        log.info(f"Model Info:\n{pformat(llm.serialise())}")
+
+        results = {}
+
+        # for timeseries in data selected
+        for series_id, data in fred_data.items():
+            results[series_id] = {}
+
+            log.info(f"Prompting {model} for Series ID: {series_id}:")
+            timeseries_df = convert_array_to_df(fred_data[series_id]["timeseries"])
+
+            # create a prompt
+            prompt = InstructPrompt(task=NUMERICAL, timeseries=timeseries_df)
+            log.info(
+                f"Prompt Tokens Length: {len(llm.tokenizer.encode(prompt.prompt_text))}"
+            )
+
+            # run inference
+            llm.inference(payload=prompt, n_runs=batch_size)
+
+            # store results  (TODO: currently overrides results_df on each inference)
+            results[series_id]["results"] = prompt.results_df.to_json(
+                orient="records", date_format="iso"
+            )
+
+            # store metadata
+            results[series_id]["metadata"] = data["metadata"]
+
+        # save results to <modelname>.json
+        if results:
+            json_path = f"{output_path}/{llm.label}.json"
+            with open(json_path, "w") as f:
+                json.dump(results, f)
+            log.info(f"Results saved to: {json_path}")
 
 
 if __name__ == "__main__":

@@ -111,9 +111,8 @@ class HuggingFace(Model):
             raise ModelError(f"Improper number of inference runs: {n_runs}")
 
         if constrained_decoding:
-            # get future timestamps
-            split = 1 - int(len(payload.timeseries) * payload.forecast_split)
-            future_timestamps = payload.timeseries.iloc[split:]["date"]
+            # Get the last n_timesteps timestamps for forecasting
+            future_timestamps = payload.timeseries.iloc[-payload.n_timesteps :]["date"]
 
         def constrained_decoding_regex(required_timestamps):
             """
@@ -123,7 +122,7 @@ class HuggingFace(Model):
             """
             timestamp_regex = "".join(
                 [
-                    r"\(\s*{}\s*,\s*[-+]?\d+(\.\d+)?\)\n".format(re.escape(ts))
+                    r"\(\s*{}\s*,\s*[-+]?\d+(\.\d+)?\)\n".format(re.escape(str(ts)))
                     for ts in required_timestamps
                 ]
             )
