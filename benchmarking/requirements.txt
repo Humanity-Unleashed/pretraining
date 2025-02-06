@@ -4,6 +4,7 @@ pydantic
 requests
 lm-format-enforcer
 pandas
+pyarrow
 accelerate
 scipy
 python-dotenv

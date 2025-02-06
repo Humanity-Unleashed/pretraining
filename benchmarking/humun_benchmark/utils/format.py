@@ -1,6 +1,4 @@
 """
-restrict output tokens using lm-format-enforcer
-
 https://github.com/ServiceNow/context-is-key-forecasting/blob/main/cik_benchmark/baselines/direct_prompt.py#L99C5-L112C69
 
 example output taken from direct_prompt
