@@ -8,6 +8,7 @@ from pprint import pformat
 
 from humun_benchmark.interfaces.huggingface import HuggingFace
 from humun_benchmark.prompt import InstructPrompt
+from humun_benchmark.metrics import compute_dataset_metrics, compute_forecast_metrics
 from humun_benchmark.utils.checks import check_env
 from humun_benchmark.utils.log_config import setup_logging
 from humun_benchmark.utils.tasks import NUMERICAL
@@ -93,25 +94,30 @@ def benchmark(
     # Log data info: series selected
     log.info(get_dataset_info(fred_data))
 
-    # for model in models
+    # for each model
     for model in models:
+        log.info(f"Loading Model: {model}")
         # create model instance and log config
         llm = HuggingFace(model)
         log.info(f"Model Info:\n{pformat(llm.serialise())}")
 
         results = {}
+        all_forecasts_dfs = []  # store all forecast DataFrames for cross-dataset metrics
 
-        # for timeseries in data selected
+        # for each timeseries in data selected
         for series_id, data in fred_data.items():
             results[series_id] = {}
 
-            log.info(f"Prompting {model} for Series ID: {series_id}:")
             timeseries_df = convert_array_to_df(fred_data[series_id]["timeseries"])
 
             # create a prompt
             prompt = InstructPrompt(task=NUMERICAL, timeseries=timeseries_df)
+
+            # store prompt token amount for analysis
+            prompt_length = len(llm.tokenizer.encode(prompt.prompt_text))
+            results[series_id]["prompt_length"] = prompt_length
             log.info(
-                f"Prompt Tokens Length: {len(llm.tokenizer.encode(prompt.prompt_text))}"
+                f"Prompting {model} for Series ID: {series_id}\n Prompt Tokens Length: {prompt_length}"
             )
 
             # run inference
@@ -124,6 +130,18 @@ def benchmark(
 
             # store metadata
             results[series_id]["metadata"] = data["metadata"]
+
+            # compute and store dataset-specific metrics
+            results[series_id]["dataset_metrics"] = compute_dataset_metrics(
+                prompt.results_df
+            )
+            log.info(f"Results DataFrame info:\n{prompt.results_df.info()}")
+
+            # store DataFrame for cross-dataset metrics
+            all_forecasts_dfs.append(prompt.results_df)
+
+        # compute and store global metrics for this model
+        results["global_metrics"] = compute_forecast_metrics(all_forecasts_dfs)
 
         # save results to <modelname>.json
         if results:
@@ -206,8 +224,6 @@ if __name__ == "__main__":
 
 
 # Note: currently /workspace/ does not have enough space, so all_fred_metadata.csv has been downloaded into personal directory, use humun_benchmark/adhoc/downloadGC.py (get API key from link in file).
-
-# Due to the same issue above, if using models not available on /workspace/huggingface_cache/ , alter .env HF_HOME value to be user-based (or delete it).
 
 # Usage example:
 #  python humun_benchmark/benchmark.py --metadata_path 'all_fred_metadata.csv' --output_path . --models llama-3.1-8b-instruct ministral-8b-instruct-2410

@@ -73,20 +73,25 @@ class InstructPrompt(Prompt):
 
     def merge_forecasts(self, dfs: List[pd.DataFrame]):
         """
-        Merge forecast responses together
+        Merge forecast responses together and include original values for metric calculation.
         """
         # Rename the value columns to forecast_1, forecast_2, ..., forecast_n
         for i, df in enumerate(dfs, start=1):
             df.rename(columns={"value": f"forecast_{i}"}, inplace=True)
 
-        # Merge all dataframes on the date column
+        # merge all forecast dataframes on the date column
         merged_df = dfs[0]
-
         if len(dfs) > 1:
             for df in dfs[1:]:
                 merged_df = pd.merge(merged_df, df, on="date", how="outer")
 
-        self.results_df = merged_df
+        # Merge with original timeseries to get actual values
+        self.results_df = pd.merge(
+            merged_df,
+            self.timeseries[["date", "value"]],
+            on="date",
+            how="inner",
+        )
 
 
 class MultiModalPrompt(Prompt):
