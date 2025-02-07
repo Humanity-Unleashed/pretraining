@@ -1,25 +1,22 @@
 import numpy as np
 import pandas as pd
-from scipy.integrate import quad
 from scipy.stats import rankdata
 from typing import Dict, List, Union
 
 
-def crps_single(obs, forecasts):
+def crps_closed_form(obs, forecasts):
     """
-    CRPS for a single observation. Uses empirical cumulative distribution.
+    Computes CRPS using the closed-form expression for an empirical forecast distribution.
     """
-    sorted_forecasts = np.sort(forecasts)
-    n = len(sorted_forecasts)
+    forecasts = np.array(forecasts)
 
-    def F(x):
-        return np.sum(sorted_forecasts <= x) / n
+    # mean of the absolute differences
+    term1 = np.mean(np.abs(forecasts - obs))
 
-    lower, upper = min(sorted_forecasts[0], obs), max(sorted_forecasts[-1], obs)
-
-    integral, _ = quad(lambda x: (F(x) - (x >= obs)) ** 2, lower, upper)
-
-    return integral
+    # average absolute difference between forecasts which is equivalent to
+    # the double sum divided by n^2, multiplied by 0.5
+    term2 = 0.5 * np.mean(np.abs(forecasts[:, None] - forecasts))
+    return term1 - term2
 
 
 def compute_dataset_metrics(df: pd.DataFrame) -> Dict:
@@ -74,7 +71,9 @@ def compute_cross_dataset_metrics(
     avg_rank = np.mean(ranks)
 
     # CRPS across all datasets
-    crps_values = [crps_single(obs, fc) for obs, fc in zip(all_actuals, all_forecasts)]
+    crps_values = [
+        crps_closed_form(obs, fc) for obs, fc in zip(all_actuals, all_forecasts)
+    ]
     avg_crps = np.mean(crps_values)
 
     # Distribution metrics

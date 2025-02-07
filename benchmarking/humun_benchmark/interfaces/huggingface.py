@@ -145,7 +145,7 @@ class HuggingFace(Model):
         # Now extract the assistant's reply
         for response in pipe(
             [payload.prompt_text] * n_runs,
-            max_new_tokens=2000,  # Only limits response length
+            max_new_tokens=6000,  # Only limits response length
             temperature=temperature,
             prefix_allowed_tokens_fn=prefix_function,
             batch_size=n_runs,

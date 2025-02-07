@@ -20,9 +20,11 @@ Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/a
 * checks first forecast date > model's last trained date? esp. if adding context
 * supply context as title/notes etc. or maybe just entire metadata row?
 * change benchmark to accept a .toml config file / more parameters.
-* redo arima 
-* docker file for creating a run of models + metrics (without relying on user-session being active)
+* redo arima - use [statsforecast](https://github.com/Nixtla/statsforecast/tree/main/python/statsforecast) ? 
+* dockerize - for a run of models + metrics (without relying on user-session being active)
+* implement other models via same class - e.g. [lag-llama](https://github.com/time-series-foundation-models/lag-llama?tab=readme-ov-file)
 
+Benchmarking Time Series forecasting models: [GIFT-Eval](https://huggingface.co/spaces/Salesforce/GIFT-Eval)
 
 Analysis: 
 * test n_steps, more accurate at monthly, quarterly or yearly? 
