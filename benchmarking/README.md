@@ -14,15 +14,15 @@ Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/a
 
 ## TODOs:
 
-* log result metrics, hardware setup + usage stats (pyviz/pyspy etc.), time elapsed, number of datasets,
 * refactor CRPS to be calculated on multiple timeseries (currently just multiple forecasts of the same timeseries)
-* stats per dataset, per model ? (can identify what types of datasets it excels at)
+* stats per dataset and per model (can identify what types of datasets it excels at)
+* log result metrics, hardware setup + usage stats (pyviz/pyspy etc.), time elapsed, number of datasets,
 * produce first-run table of results
 
 * truncation option (ntimesteps of history max)
-* checks first forecast data > model's last trained date
+* checks first forecast date > model's last trained date
 * supply context as title/notes etc. or maybe just entire metadata row?
-* change benchmark to accept a .toml file / more parameters. 
+* change benchmark to accept a .toml config file / more parameters.
 * redo arima 
 
 * capture tasks in notion
@@ -30,9 +30,10 @@ Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/a
 
 
 TESTS/Analysis: 
-* test n_steps, more accurate at monthly, quarterly or yearly etc. 
+* test n_steps, more accurate at monthly, quarterly or yearly? 
 * MAE distribution across all datasets (per model)
 * token overhead - with 40+ years of monthly data, predicting 1 year, does the token overhead of providing 39+ years of data degrade performance? test vs. 10 years etc. (record n_tokens in logs)
+
 
 ## Installation
 > [!Note]
@@ -84,9 +85,9 @@ Data columns (total 16 columns):
 
 ## Environment Variables 
 > [!Note]
-> Alternative values can be provided at runtime via the config.toml or to generate.py parameters.
+> Alternative values can be provided at runtime via the benchmark.py or benchmark() parameters.
 
-Contained in `.env` and read-in when `humun_benchmark.utils.checks.check_env()` is called. 
+Contained in `.env` and read-in when `humun_benchmark.utils.checks.check_env()` is imported. 
 
 | Variable Name | Description | Default Value |
 |--------------|-------------|----------------|

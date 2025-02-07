@@ -6,8 +6,6 @@ from datetime import datetime
 from typing import List, Union, Dict
 from pprint import pformat
 
-import pandas as pd
-
 from humun_benchmark.interfaces.huggingface import HuggingFace
 from humun_benchmark.prompt import InstructPrompt
 from humun_benchmark.utils.checks import check_env
@@ -180,13 +178,13 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         default=["llama-3.1-8b-instruct"],
-        help="List of model names to benchmark",
+        help="List of models to benchmark",
     )
     parser.add_argument(
         "--batch_size",
         type=int,
         default=1,
-        help="Number of runs per inference",
+        help="Number of inferences per dataset",
     )
     args = parser.parse_args()
 
@@ -205,3 +203,11 @@ if __name__ == "__main__":
     del vars_dict["n_datasets"]
 
     benchmark(selector=selector, n_datasets=n_datasets, **vars_dict)
+
+
+# Note: currently /workspace/ does not have enough space, so all_fred_metadata.csv has been downloaded into personal directory, use humun_benchmark/adhoc/downloadGC.py (get API key from link in file).
+
+# Due to the same issue above, if using models not available on /workspace/huggingface_cache/ , alter .env HF_HOME value to be user-based (or delete it).
+
+# Usage example:
+#  python humun_benchmark/benchmark.py --metadata_path 'all_fred_metadata.csv' --output_path . --models llama-3.1-8b-instruct ministral-8b-instruct-2410

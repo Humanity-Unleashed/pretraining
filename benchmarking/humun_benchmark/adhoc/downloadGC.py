@@ -2,6 +2,9 @@ from google.cloud import storage
 import sys
 import os
 
+
+# Get key from this notion page -
+# https://humanity-unleashed.notion.site/FRED-Time-Series-Scraping-Tutorial-51774df4e0a5484e8458ae4665e53664#:~:text=service%2Daccount%2Dkey.json%20(a%20setup%20file%20with%20keys%20allowing%20you%20to%20access%20the%20GC%20space)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcs.json"  #!! make sure to edit this
 
 
