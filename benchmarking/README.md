@@ -34,7 +34,7 @@ Data is split into two parts:
 Columns: Index(['series_id', 'history', 'forecast'], dtype='object')
 ```
 2. Metadata:
-    * contained in a `.csv` file stored at `/workspaces/datasets/fred/all_fred_metadata.csv`
+    * ~~contained in a `.csv` file stored at `/workspaces/datasets/fred/all_fred_metadata.csv`~~ (Note: Currently there is no space to store the metadata file on /workspace, it can be downloaded via `humun_benchmark/adhoc/downloadGC.py` after API key has been retrieved from Notion- see file comments for link) 
     * it assumes the format; 
 ```python 
 Data columns (total 16 columns):
