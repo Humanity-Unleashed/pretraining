@@ -12,29 +12,9 @@ A tool to systematically test LLMs with time-series forecasting and policy NLP t
 Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/abs/2410.18959) | [github](https://github.com/ServiceNow/context-is-key-forecasting/blob/main/cik_benchmark/baselines/direct_prompt.py) ].
 
 
-## TODOs:
-
-* log result metrics, hardware setup + usage stats (pyviz/pyspy etc.), time elapsed, number of datasets,
-
-* truncation option (ntimesteps of history max)
-* checks first forecast date > model's last trained date? esp. if adding context
-* supply context as title/notes etc. or maybe just entire metadata row?
-* change benchmark to accept a .toml config file / more parameters.
-* redo arima - use [statsforecast](https://github.com/Nixtla/statsforecast/tree/main/python/statsforecast) ? 
-* dockerize - for a run of models + metrics (without relying on user-session being active)
-* implement other models via same class - e.g. [lag-llama](https://github.com/time-series-foundation-models/lag-llama?tab=readme-ov-file)
-
-Benchmarking Time Series forecasting models: [GIFT-Eval](https://huggingface.co/spaces/Salesforce/GIFT-Eval)
-
-Analysis: 
-* test n_steps, more accurate at monthly, quarterly or yearly? 
-* MAE distribution across all datasets (per model)
-* token overhead - with 40+ years of monthly data, predicting 1 year, does the token overhead of providing 39+ years of data degrade performance? test vs. 10 years etc. (record n_tokens in logs)
-
-
 ## Installation
 > [!Note]
-> If using flash-attention-2 for attention mask configuration, see comments below to install correctly. 
+> Requires `uv` installed. See instructions [here](https://docs.astral.sh/uv/getting-started/installation/) if not available on your system.
 
 ```bash
 make install
