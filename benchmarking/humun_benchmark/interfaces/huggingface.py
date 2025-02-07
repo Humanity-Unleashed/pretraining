@@ -94,6 +94,13 @@ class HuggingFace(Model):
 
     def _load_model(self):
         self.model, self.tokenizer = get_model_and_tokenizer(self.label)
+        # Create the pipeline once during model loading
+        self.pipeline = pipeline(
+            task="text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            device_map="auto",
+        )
 
     @torch.inference_mode()
     def inference(
@@ -125,27 +132,19 @@ class HuggingFace(Model):
             )
             return r"<forecast>\n{}<\/forecast>".format(timestamp_regex)
 
-        # Make generation pipeline
-        pipe = pipeline(
-            task="text-generation",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            device_map="auto",
-        )
-
         # Build a regex parser with the generated regex
         parser = RegexParser(constrained_decoding_regex(future_timestamps))
         prefix_function = build_transformers_prefix_allowed_tokens_fn(
-            pipe.tokenizer, parser
+            self.pipeline.tokenizer, parser
         )
 
-        # info for debugging cuda issues
+        # Log info for debugging
         log.info(f"Running inference on {self.model.device} for {n_runs} time/s.")
 
-        # Now extract the assistant's reply
-        for response in pipe(
+        # Use the pre-created pipeline (self.pipeline) for inference.
+        for response in self.pipeline(
             [payload.prompt_text] * n_runs,
-            max_new_tokens=6000,  # Only limits response length
+            max_new_tokens=6000,  # Limit response length
             temperature=temperature,
             prefix_allowed_tokens_fn=prefix_function,
             batch_size=n_runs,
@@ -154,9 +153,9 @@ class HuggingFace(Model):
             forecast_output = response[0]["generated_text"][output_start:]
             payload.responses.append(forecast_output)
 
-        # turn text response/s into a results dataframe
+        # Turn text responses into a results dataframe
         dfs = [parse_forecast_output(df) for df in payload.responses]
-        payload.merge_forecasts(dfs)  # sets payload.results_df in-place
+        payload.merge_forecasts(dfs)  # Sets payload.results_df in-place
 
     def serialise(self):
         """

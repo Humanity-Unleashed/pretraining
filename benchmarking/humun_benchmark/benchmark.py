@@ -2,6 +2,8 @@ import argparse
 import json
 import logging
 import os
+import torch
+
 from datetime import datetime
 from typing import List, Union, Dict
 from pprint import pformat
@@ -143,6 +145,27 @@ def benchmark(
 
             # store DataFrame for cross-dataset metrics
             all_forecasts_dfs.append(prompt.results_df)
+
+            device = torch.device("cuda:0")
+
+            # Log before clearing cache
+            before_reserved = torch.cuda.memory_reserved(device)
+            before_allocated = torch.cuda.memory_allocated(device)
+            log.info(
+                f"Before empty_cache(): Allocated = {before_allocated / (1024**2):.2f} MB, "
+                f"Reserved = {before_reserved / (1024**2):.2f} MB"
+            )
+            del prompt
+            torch.cuda.empty_cache()
+            # Log after clearing cache
+            after_reserved = torch.cuda.memory_reserved(device)
+            after_allocated = torch.cuda.memory_allocated(device)
+            cleared = before_reserved - after_reserved
+            log.info(
+                f"After empty_cache(): Allocated = {after_allocated / (1024**2):.2f} MB, "
+                f"Reserved = {after_reserved / (1024**2):.2f} MB, "
+                f"Cleared = {cleared / (1024**2):.2f} MB"
+            )
 
         # compute and store global metrics for this model
         model_benchmark["global_metrics"] = compute_forecast_metrics(all_forecasts_dfs)
