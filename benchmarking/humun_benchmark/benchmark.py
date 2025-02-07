@@ -73,7 +73,7 @@ def benchmark(
         "models": models,
         "batch_size": batch_size,
     }
-    log.info(f"Run Parameters:\n{pformat(params)}")
+    log.info(f"Benchmark Parameters:\n{pformat(params)}")
 
     log.info("Reading in Metadata and Datasets...")
     # Get data based on selector type
@@ -99,14 +99,18 @@ def benchmark(
         log.info(f"Loading Model: {model}")
         # create model instance and log config
         llm = HuggingFace(model)
-        log.info(f"Model Info:\n{pformat(llm.serialise())}")
+        model_info = pformat(llm.serialise())
+        log.info(f"Model Info:\n{model_info}")
 
-        results = {}
+        model_benchmark = {}
+        model_benchmark["model_info"] = model_info
+        model_benchmark["forecasts"] = {}
+
         all_forecasts_dfs = []  # store all forecast DataFrames for cross-dataset metrics
 
         # for each timeseries in data selected
         for series_id, data in fred_data.items():
-            results[series_id] = {}
+            dataset_info = {}
 
             timeseries_df = convert_array_to_df(fred_data[series_id]["timeseries"])
 
@@ -115,7 +119,7 @@ def benchmark(
 
             # store prompt token amount for analysis
             prompt_length = len(llm.tokenizer.encode(prompt.prompt_text))
-            results[series_id]["prompt_length"] = prompt_length
+            dataset_info["prompt_length"] = prompt_length
             log.info(
                 f"Prompting {model} for Series ID: {series_id}\n Prompt Tokens Length: {prompt_length}"
             )
@@ -124,31 +128,30 @@ def benchmark(
             llm.inference(payload=prompt, n_runs=batch_size)
 
             # store results  (TODO: currently overrides results_df on each inference)
-            results[series_id]["results"] = prompt.results_df.to_json(
+            dataset_info["results"] = prompt.results_df.to_json(
                 orient="records", date_format="iso"
             )
 
             # store metadata
-            results[series_id]["metadata"] = data["metadata"]
+            dataset_info["metadata"] = data["metadata"]
 
             # compute and store dataset-specific metrics
-            results[series_id]["dataset_metrics"] = compute_dataset_metrics(
-                prompt.results_df
-            )
-            log.info(f"Results DataFrame info:\n{prompt.results_df.info()}")
+            dataset_info["dataset_metrics"] = compute_dataset_metrics(prompt.results_df)
+
+            # store dataset-specific benchmark info
+            model_benchmark["forecasts"][series_id] = dataset_info
 
             # store DataFrame for cross-dataset metrics
             all_forecasts_dfs.append(prompt.results_df)
 
         # compute and store global metrics for this model
-        results["global_metrics"] = compute_forecast_metrics(all_forecasts_dfs)
+        model_benchmark["global_metrics"] = compute_forecast_metrics(all_forecasts_dfs)
 
         # save results to <modelname>.json
-        if results:
-            json_path = f"{output_path}/{llm.label}.json"
-            with open(json_path, "w") as f:
-                json.dump(results, f)
-            log.info(f"Results saved to: {json_path}")
+        json_path = f"{output_path}/{llm.label}.json"
+        with open(json_path, "w") as f:
+            json.dump(model_benchmark, f)
+        log.info(f"Results saved to: {json_path}")
 
 
 if __name__ == "__main__":

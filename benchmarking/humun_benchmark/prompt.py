@@ -75,15 +75,20 @@ class InstructPrompt(Prompt):
         """
         Merge forecast responses together and include original values for metric calculation.
         """
+
         # Rename the value columns to forecast_1, forecast_2, ..., forecast_n
         for i, df in enumerate(dfs, start=1):
             df.rename(columns={"value": f"forecast_{i}"}, inplace=True)
 
-        # merge all forecast dataframes on the date column
+        # Merge all forecast dataframes on the date column
         merged_df = dfs[0]
         if len(dfs) > 1:
             for df in dfs[1:]:
                 merged_df = pd.merge(merged_df, df, on="date", how="outer")
+
+        # Convert dates to same type
+        merged_df["date"] = pd.to_datetime(merged_df["date"])
+        self.timeseries["date"] = pd.to_datetime(self.timeseries["date"])
 
         # Merge with original timeseries to get actual values
         self.results_df = pd.merge(

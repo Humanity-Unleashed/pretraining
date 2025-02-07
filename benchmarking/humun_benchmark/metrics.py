@@ -34,15 +34,27 @@ def compute_dataset_metrics(df: pd.DataFrame) -> Dict:
     # Only compute metrics that can be meaningfully averaged
     mae = np.mean(np.abs(forecast_errors))
     rmse = np.sqrt(np.mean(forecast_errors**2))
-    mape = np.mean(np.abs(forecast_errors / actuals[:, None])) * 100
+
+    # Handle zero values in MAPE calculation
+    non_zero_mask = actuals != 0
+    if np.any(non_zero_mask):
+        mape = (
+            np.mean(
+                np.abs(forecast_errors[non_zero_mask] / actuals[non_zero_mask, None])
+            )
+            * 100
+        )
+    else:
+        mape = np.nan  # or some other fallback
 
     return {
         "MAE": float(mae),
         "RMSE": float(rmse),
         "MAPE": float(mape),
         "n_samples": len(actuals),
-        "forecasts": forecast_matrix,
-        "actuals": actuals,
+        # convert to list for JSON serialisation
+        "forecasts": forecast_matrix.tolist(),
+        "actuals": actuals.tolist(),
     }
 
 
@@ -91,18 +103,23 @@ def compute_forecast_metrics(dfs: Union[pd.DataFrame, List[pd.DataFrame]]) -> Di
     # Weight averageable metrics by dataset size
     total_samples = sum(m["n_samples"] for m in dataset_metrics)
     weighted_metrics = {
-        "MAE": sum(m["MAE"] * m["n_samples"] for m in dataset_metrics) / total_samples,
-        "RMSE": np.sqrt(
-            sum((m["RMSE"] ** 2 * m["n_samples"]) for m in dataset_metrics)
-            / total_samples
+        "MAE": float(
+            sum(m["MAE"] * m["n_samples"] for m in dataset_metrics) / total_samples
         ),
-        "MAPE": sum(m["MAPE"] * m["n_samples"] for m in dataset_metrics)
-        / total_samples,
+        "RMSE": float(
+            np.sqrt(
+                sum((m["RMSE"] ** 2 * m["n_samples"]) for m in dataset_metrics)
+                / total_samples
+            )
+        ),
+        "MAPE": float(
+            sum(m["MAPE"] * m["n_samples"] for m in dataset_metrics) / total_samples
+        ),
     }
 
-    # Compute cross-dataset metrics
-    forecasts = [m["forecasts"] for m in dataset_metrics]
-    actuals = [m["actuals"] for m in dataset_metrics]
+    # Compute cross-dataset metrics (convert back to np for metrics)
+    forecasts = [np.array(m["forecasts"]) for m in dataset_metrics]
+    actuals = [np.array(m["actuals"]) for m in dataset_metrics]
     cross_metrics = compute_cross_dataset_metrics(forecasts, actuals)
 
     # Combine all metrics

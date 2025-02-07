@@ -107,9 +107,6 @@ class HuggingFace(Model):
         """Appends inference output to `payload.responses` and the resultant
         dataframe to `payload.results_df`"""
 
-        if not 0 < n_runs <= 20:
-            raise ModelError(f"Improper number of inference runs: {n_runs}")
-
         if constrained_decoding:
             # Get the last n_timesteps timestamps for forecasting
             future_timestamps = payload.timeseries.iloc[-payload.n_timesteps :]["date"]
@@ -143,15 +140,12 @@ class HuggingFace(Model):
         )
 
         # info for debugging cuda issues
-        log.info(
-            f"Running inference sequentially on {self.model.device} for {n_runs} time/s."
-        )
+        log.info(f"Running inference on {self.model.device} for {n_runs} time/s.")
 
         # Now extract the assistant's reply
         for response in pipe(
             [payload.prompt_text] * n_runs,
-            max_length=10000,
-            truncation=True,
+            max_new_tokens=2000,  # Only limits response length
             temperature=temperature,
             prefix_allowed_tokens_fn=prefix_function,
             batch_size=n_runs,

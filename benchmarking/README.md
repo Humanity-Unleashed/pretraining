@@ -14,22 +14,17 @@ Instruct prompt method inspired by CiK forecasting [ [paper](https://arxiv.org/a
 
 ## TODOs:
 
-* refactor CRPS to be calculated on multiple timeseries (currently just multiple forecasts of the same timeseries)
-* stats per dataset and per model (can identify what types of datasets it excels at)
 * log result metrics, hardware setup + usage stats (pyviz/pyspy etc.), time elapsed, number of datasets,
-* produce first-run table of results
 
 * truncation option (ntimesteps of history max)
-* checks first forecast date > model's last trained date
+* checks first forecast date > model's last trained date? esp. if adding context
 * supply context as title/notes etc. or maybe just entire metadata row?
 * change benchmark to accept a .toml config file / more parameters.
 * redo arima 
-
-* capture tasks in notion
 * docker file for creating a run of models + metrics (without relying on user-session being active)
 
 
-TESTS/Analysis: 
+Analysis: 
 * test n_steps, more accurate at monthly, quarterly or yearly? 
 * MAE distribution across all datasets (per model)
 * token overhead - with 40+ years of monthly data, predicting 1 year, does the token overhead of providing 39+ years of data degrade performance? test vs. 10 years etc. (record n_tokens in logs)
