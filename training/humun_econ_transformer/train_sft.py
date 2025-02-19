@@ -3,9 +3,10 @@ import math
 import os
 from datetime import datetime
 
+from datasets import DatasetDict
 from transformers.trainer import get_scheduler
 
-from .data import SFTDataset
+from .data import SFTDataset, get_fred_data
 from .models import Model
 from .trainer import SFTTrainer
 from .utils import blending_datasets, get_strategy, get_tokenizer
@@ -44,17 +45,28 @@ def train(args):
     optim = strategy.create_optimizer(model, lr=args.learning_rate, betas=args.adam_betas, weight_decay=args.l2)
 
     # prepare for data and dataset
-    train_data, eval_data = blending_datasets(
-        args.dataset,
-        args.dataset_probs,
-        strategy,
-        args.seed,
-        max_count=args.max_samples,
-        train_split=args.train_split,
-        eval_split=args.eval_split,
-    )
-    train_data = train_data.select(range(min(args.max_samples, len(train_data))))
-    eval_data = eval_data.select(range(min(args.max_samples, len(eval_data))))
+    if os.path.exists(args.processed_dataset_path) and bool(os.listdir(args.processed_dataset_path)):
+        strategy.print(f"Loading existing dataset at {args.processed_dataset_path}...")
+        train_test_dataset = DatasetDict.load_from_disk(args.processed_dataset_path)
+        train_data = train_test_dataset["train"]
+        eval_data = train_test_dataset["test"]
+    else:
+        train_data, eval_data = get_fred_data(
+            args.dataset_path,
+            args.metadata_path,
+            max_count=args.max_samples,
+            return_eval=True,
+        )
+
+        if args.processed_dataset_path:
+            new_dataset = DatasetDict({
+                    "train": train_data,
+                    "test": eval_data,
+            })
+            
+            new_dataset.save_to_disk(args.processed_dataset_path)
+            strategy.print(f"Datasets created and saved at {args.processed_dataset_path}.")
+
     train_dataset = SFTDataset(
         train_data,
         tokenizer,
@@ -197,8 +209,10 @@ if __name__ == "__main__":
     parser.add_argument("--packing_samples", action="store_true", default=False)
 
     # custom dataset
-    parser.add_argument("--dataset", type=str, default=None)
-    parser.add_argument("--dataset_probs", type=str, default="1.0", help="sampling probs for datasets")
+    parser.add_argument("--dataset_path", type=str, default=None)
+    parser.add_argument("--metadata_path", type=str, default=None)
+    parser.add_argument("--processed_dataset_path", type=str, default=None, help="If path exists, will load preprocessed dataset. Else will save preprocessed dataset to this path.")
+    # parser.add_argument("--dataset_probs", type=str, default="1.0", help="sampling probs for datasets")
     parser.add_argument("--train_split", type=str, default="train", help="train split of the HF dataset")
     parser.add_argument("--eval_split", type=str, default="test", help="test split of the dataset")
 
@@ -216,7 +230,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_wandb", type=str, default=None)
     parser.add_argument("--wandb_org", type=str, default=None)
     parser.add_argument("--wandb_group", type=str, default=None)
-    parser.add_argument("--wandb_project", type=str, default="openrlhf_train_sft")
+    parser.add_argument("--wandb_project", type=str, default="humun_pretraining")
     parser.add_argument(
         "--wandb_run_name",
         type=str,

@@ -4,6 +4,13 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 
+#@TODO: Don't hardcode this in this script
+SYSTEM_PROMPT = """
+You are an economic time-series forecasting expert. Predict the values at the forecast timestamps given the historical data provided. 
+
+Only provide the forecast in your response in the format (timestamp, value) in between <forecast> and </forecast> tags. Don't include any other information/comments in your response.
+"""
+
 def zero_pad_sequences(sequences, side: str = "left", value=0):
     assert side in ("left", "right")
     max_len = max(seq.size(-1) for seq in sequences)
@@ -14,27 +21,22 @@ def zero_pad_sequences(sequences, side: str = "left", value=0):
         padded_sequences.append(F.pad(seq, padding, value=value))
     return torch.stack(padded_sequences, dim=0)
 
-def preprocess_data(data, input_template=None, input_key="input", output_key=None, apply_chat_template=None):
+def preprocess_data(data, input_template=None, input_key="history", output_key="forecast", apply_chat_template=None):
     if apply_chat_template:
-        if output_key:
-            prompt_message = data[input_key]
-            response_message = data[output_key]
+        prompt_message = data[input_key]
+        response_message = data[output_key]
 
-            if isinstance(prompt_message, str) and isinstance(response_message, str):
-                prompt_message = [{"role": "user", "content": prompt_message}]
-                response_message = [{"role": "assistant", "content": response_message}]
+        if isinstance(prompt_message, str) and isinstance(response_message, str):
+            prompt_message = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt_message}]
+            response_message = [{"role": "assistant", "content": response_message}]
 
-            prompt = apply_chat_template(prompt_message, tokenize=False, add_generation_prompt=True)
-            response = apply_chat_template(prompt_message + response_message, tokenize=False)[len(prompt) :]
-        else:
-            prompt = apply_chat_template(data[input_key][:-1], tokenize=False, add_generation_prompt=True)
-            response = apply_chat_template(data[input_key], tokenize=False)[len(prompt) :]
+        prompt = apply_chat_template(prompt_message, tokenize=False, add_generation_prompt=True)
+        response = apply_chat_template(prompt_message + response_message, tokenize=False)[len(prompt) :]
     else:
-        prompt = data[input_key]
+        prompt = f"<task>\n{SYSTEM_PROMPT}\n</task>\n{data[input_key]}"
         if input_template:
             prompt = input_template.format(prompt)
-        # output_key is None for continue pretrain
-        response = data[output_key] if output_key else ""
+        response = data[output_key]
     return prompt, response
 
 
