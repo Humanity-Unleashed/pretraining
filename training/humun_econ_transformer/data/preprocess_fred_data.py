@@ -60,10 +60,10 @@ def main():
         )
         
         for chunk in train_chunks:
-            train_data.append((row['series_id'], row['title'], [value for _, value in chunk[:args.context_window]], [value for _, value in chunk[args.context_window:]]))
+            train_data.append((row['series_id'], row['title'], chunk[:args.context_window], chunk[args.context_window:]))
         
         for chunk in test_chunks:
-            test_data.append((row['series_id'], row['title'], [value for _, value in chunk[:args.context_window]], [value for _, value in chunk[args.context_window:]]))
+            test_data.append((row['series_id'], row['title'], chunk[:args.context_window], chunk[args.context_window:]))
     
     train_df = pd.DataFrame(train_data, columns=['series_id', 'title', 'history', 'forecast'])
     test_df = pd.DataFrame(test_data, columns=['series_id', 'title', 'history', 'forecast'])

@@ -56,7 +56,6 @@ def train(args):
             args.test_dataset_path,
             args.metadata_path,
             max_count=args.max_samples,
-            return_eval=True,
         )
 
         if args.processed_dataset_path:
