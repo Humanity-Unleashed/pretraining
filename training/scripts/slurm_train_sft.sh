@@ -45,7 +45,8 @@ module load gcc/12.2.0-fasrc01
 
 deepspeed --module humun_econ_transformer.train_sft \
    --max_len 512 \
-   --dataset_path datasets/split.parquet\
+   --train_dataset_path datasets/fred_train.parquet \
+   --test_dataset_path datasets/fred_test.parquet \
    --metadata_path datasets/all_fred_metadata.csv \
    --processed_dataset_path datasets/processed_split\
    --input_key history \

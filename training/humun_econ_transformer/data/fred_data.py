@@ -11,12 +11,11 @@ def convert_history_and_forecast_str(example: Dict):
     return example
 
 def get_fred_data(
-    dataset_path: str,
+    train_dataset_path: str,
+    test_dataset_path: str,
     metadata_path: str,
     seed=42,
     max_count=5000000,
-    test_size=0.05,
-    return_eval=True,
     filters: Dict = {"frequency": "Monthly"},  # Default to Monthly
 ):
     """
@@ -24,7 +23,8 @@ def get_fred_data(
     Converts 'history' and 'forecast' columns from lists of tuples to strings.
 
     Args:
-        dataset_path: Path to parquet file with time series data.
+        train_dataset_path: Path to train dataset parquet file with time series data.
+        test_dataset_path: Path to test dataset parquet file with time series data.
         metadata_path: Path to metadata CSV file.
         seed: Random seed to set for dataset shuffling.
         max_count: Maximum number of samples to include in the dataset.
@@ -52,7 +52,8 @@ def get_fred_data(
     
 
     # Load time series dataset in HuggingFace.
-    dataset = load_dataset("parquet", data_files=dataset_path)['train']
+    train_dataset = load_dataset("parquet", data_files=train_dataset_path)['train']
+    test_dataset = load_dataset("parquet", data_files=test_dataset_path)['train']
 
     # Filter dataset by missing values and match series id to those selected
     selected_ids = metadata_df["id"].tolist()
@@ -60,19 +61,13 @@ def get_fred_data(
         #@TODO: Currently filtering out any time series with any missing values in history and forecast
         return example["series_id"] in selected_ids and not any(value == '.' for _, value in example['history']) and not any(value == '.' for _, value in example['forecast'])
 
-    filtered_dataset = dataset.filter(matching_id_and_no_missing_values)
+    filtered_train_dataset = train_dataset.filter(matching_id_and_no_missing_values)
+    filtered_test_dataset = test_dataset.filter(matching_id_and_no_missing_values)
 
     # Convert list of time series values to newline-separated values, with forecast timestamps included in history.
-    filtered_dataset = filtered_dataset.map(convert_history_and_forecast_str)
+    filtered_train_dataset = filtered_train_dataset.map(convert_history_and_forecast_str)
+    filtered_test_dataset = filtered_test_dataset.map(convert_history_and_forecast_str)
 
-    # If applicable, split into train-test and truncate to max_count samples.
-    if return_eval:
-        train_test_dataset = filtered_dataset.train_test_split(test_size=test_size, seed=seed)
-        train_dataset = train_test_dataset['train']
-        train_dataset = train_dataset.select(range(min(max_count, len(train_dataset))))
-
-        eval_dataset = train_test_dataset['test']
-        eval_dataset = eval_dataset.select(range(min(max_count, len(eval_dataset))))
-        return train_dataset, eval_dataset
-    else:
-        return filtered_dataset.select(range(min(max_count, len(filtered_dataset))))
+    train_dataset = filtered_train_dataset.select(range(min(max_count, len(filtered_train_dataset))))
+    test_dataset = filtered_test_dataset.select(range(min(max_count, len(filtered_test_dataset))))
+    return train_dataset, test_dataset

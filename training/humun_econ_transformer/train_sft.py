@@ -52,7 +52,8 @@ def train(args):
         eval_data = train_test_dataset["test"]
     else:
         train_data, eval_data = get_fred_data(
-            args.dataset_path,
+            args.train_dataset_path,
+            args.test_dataset_path,
             args.metadata_path,
             max_count=args.max_samples,
             return_eval=True,
@@ -209,7 +210,8 @@ if __name__ == "__main__":
     parser.add_argument("--packing_samples", action="store_true", default=False)
 
     # custom dataset
-    parser.add_argument("--dataset_path", type=str, default=None)
+    parser.add_argument("--train_dataset_path", type=str, default=None)
+    parser.add_argument("--test_dataset_path", type=str, default=None)
     parser.add_argument("--metadata_path", type=str, default=None)
     parser.add_argument("--processed_dataset_path", type=str, default=None, help="If path exists, will load preprocessed dataset. Else will save preprocessed dataset to this path.")
     # parser.add_argument("--dataset_probs", type=str, default="1.0", help="sampling probs for datasets")
