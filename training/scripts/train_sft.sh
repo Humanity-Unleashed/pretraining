@@ -1,5 +1,5 @@
 deepspeed --module humun_econ_transformer.train_sft \
-   --max_len 512 \
+   --max_len 1024 \
    --dataset_path datasets/split.parquet\
    --metadata_path datasets/all_fred_metadata.csv \
    --processed_dataset_path datasets/processed_split\
