@@ -12,5 +12,4 @@ Pretraining project notion board: https://www.notion.so/humanity-unleashed/Pretr
 * Try training with different models and sizes (using LoRA, etc)
 * Incorporate other evaluation metrics (currently just next-token prediction loss)
 
-\[Aiden\]  TO-DOs re: zero-shot benchmarks (02/02/25) 
-* see [benchmarking readme.md](https://github.com/Humanity-Unleashed/pretraining/blob/main/benchmarking/README.md)
+\[Aiden\] Benchmarking moved to [seperate repo](https://github.com/Humanity-Unleashed/benchmarking).
