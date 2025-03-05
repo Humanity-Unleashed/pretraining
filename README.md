@@ -2,8 +2,10 @@
 Code for finetuning Economics Transformer.
 
 ## TODOS
-- Coordinate with Aiden about consistency with dataset processing
 - Train different baseline models and pass to Aiden for evaluation
+- Ablate over different models and sizes (eg. Qwen-2.5 Instruct, Llama Instruct models), as well as full finetuning vs LoRA (need to sweep over rank)
+- Integrate other optimizers (eg. SOAP) into codebase
+- Modify dataset processing code so that it does the chunking in the train script itself (and doesn't read in a parquet file which already has the chunks)
 
 ## Setup
 
