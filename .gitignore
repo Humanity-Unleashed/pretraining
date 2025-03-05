@@ -1,6 +1,6 @@
-training/datasets/
-training/wandb/
-training/ckpt/
+datasets/
+wandb/
+ckpt/
 *.jsonl
 *json
 # Byte-compiled / optimized / DLL files
