@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=sft_test
-#SBATCH --account=<YOUR ACCOUNT>
-#SBATCH --output=<YOUR LOGS>
+#SBATCH --account=<YOUR ACCOUNT HERE>
+#SBATCH --partition=<YOUR PARTITION HERE>               
+#SBATCH --output <YOUR OUTPUT FILE PATH HERE>           # Output file
 #SBATCH --export=ALL
 #SBATCH --nodes=2  
 #SBATCH --ntasks-per-node=1
@@ -9,7 +10,6 @@
 #SBATCH --cpus-per-task=24
 #SBATCH --time=20:00:00
 #SBATCH --mem=250GB
-#SBATCH --partition=<YOUR PARTITION>
 
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
