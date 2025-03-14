@@ -50,6 +50,8 @@ def train(args):
         train_test_dataset = DatasetDict.load_from_disk(args.processed_dataset_path)
         train_data = train_test_dataset["train"]
         eval_data = train_test_dataset["test"]
+        train_data = train_data.select(range(min(args.max_samples, len(train_data))))
+        eval_data = eval_data.select(range(min(args.max_samples, len(eval_data))))
     else:
         train_data, eval_data = get_fred_data(
             args.train_dataset_path,

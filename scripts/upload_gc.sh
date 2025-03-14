@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=upload_gc      
-#SBATCH --account=barak_lab
-#SBATCH --partition=seas_compute                   
-#SBATCH --output /n/netscratch/kempner_sham_lab/Lab/rosieyzh/humun/logs/%A.out           # Output file
-#SBATCH --error /n/netscratch/kempner_sham_lab/Lab/rosieyzh/humun/logs/%A.err             # Error file          
+#SBATCH --account=<YOUR ACCOUNT HERE>
+#SBATCH --partition=<YOUR PARTITION HERE>               
+#SBATCH --output <YOUR OUTPUT FILE PATH HERE>           # Output file
+#SBATCH --error <YOUR ERROR FILE PATH HERE>            # Error file          
 #SBATCH --time=72:00:00                    
 #SBATCH --nodes=1                             
 #SBATCH --ntasks-per-node=1                                  

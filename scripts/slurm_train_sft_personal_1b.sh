@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=sft_fred_ts
-#SBATCH --account=kempner_sham_lab
-#SBATCH --output=/n/netscratch/kempner_sham_lab/Lab/rosieyzh/humun/logs/%A.log
+#SBATCH --account=<YOUR ACCOUNT HERE>
+#SBATCH --partition=<YOUR PARTITION HERE>               
+#SBATCH --output <YOUR OUTPUT FILE PATH HERE>           # Output file
 #SBATCH --export=ALL
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -9,7 +10,6 @@
 #SBATCH --cpus-per-task=24
 #SBATCH --time=20:00:00
 #SBATCH --mem=250GB
-#SBATCH --partition=kempner_h100
 
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
