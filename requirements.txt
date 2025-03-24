@@ -18,3 +18,9 @@ transformers==4.46.3
 transformers_stream_generator
 wandb
 wheel
+
+#reqs for scaling laws
+optbayesexpt @ git+https://github.com/usnistgov/optbayesexpt.git 
+omegaconf
+hydra-core
+numpy
