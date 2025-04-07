@@ -1,6 +1,6 @@
 deepspeed --module humun_econ_transformer.train_sft \
    --max_len 1024 \
-   --raw_data_path datasets/all_FRED_merged.csv \
+   --raw_data_path datasets/final_filtered_FRED_data.csv \
    --metadata_path datasets/all_fred_metadata.csv \
    --processed_dataset_path datasets/processed_flexible_ts \
    --input_key history \
