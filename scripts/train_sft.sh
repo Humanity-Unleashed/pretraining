@@ -1,17 +1,17 @@
 deepspeed --module humun_econ_transformer.train_sft \
    --max_len 1024 \
-   --train_dataset_path datasets/fred_train.parquet \
-   --test_dataset_path datasets/fred_test.parquet \
+   --raw_data_path datasets/final_filtered_FRED_data.csv \
    --metadata_path datasets/all_fred_metadata.csv \
-   --processed_dataset_path datasets/processed_split \
+   --processed_dataset_path datasets/processed_flexible_ts \
    --input_key history \
    --output_key forecast \
    --apply_chat_template \
    --train_batch_size 128 \
    --micro_train_batch_size 8 \
-   --max_samples 1000 \
+   --max_samples 500000 \
    --pretrain Qwen/Qwen2.5-1.5B-Instruct \
-   --save_path ./checkpoint/qwen_2_5_1b_instruct_test \
+   --save_path ./checkpoint/qwen_2_5_1b_instruct_flexible \
+   --ckpt_path ./checkpoint/qwen_2_5_1b_instruct_flexible/ckpt \
    --save_steps -1 \
    --logging_steps 1 \
    --eval_steps -1 \
@@ -22,4 +22,9 @@ deepspeed --module humun_econ_transformer.train_sft \
    --flash_attn \
    --learning_rate 5e-6 \
    --gradient_checkpointing \
-   --use_wandb ${WANDB_API_KEY} \
+   --max_prediction_window 6 \
+   --context_multiplier 7 \
+   --num_eval_chunks 1 \
+   --max_cutoff_year 2024 \
+   --frequency "Monthly" \
+   --seed 42 \

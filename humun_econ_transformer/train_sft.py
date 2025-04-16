@@ -53,11 +53,17 @@ def train(args):
         train_data = train_data.select(range(min(args.max_samples, len(train_data))))
         eval_data = eval_data.select(range(min(args.max_samples, len(eval_data))))
     else:
+        # Use the updated get_fred_data function
         train_data, eval_data = get_fred_data(
-            args.train_dataset_path,
-            args.test_dataset_path,
-            args.metadata_path,
+            raw_dataset_path=args.raw_data_path,
+            metadata_path=args.metadata_path,
+            max_prediction_window=args.max_prediction_window,
+            context_multiplier=args.context_multiplier,
+            num_eval_chunks=args.num_eval_chunks,
+            max_cutoff_year=args.max_cutoff_year if args.max_cutoff_year > 0 else None,
+            seed=args.seed,
             max_count=args.max_samples,
+            filters={"frequency": args.frequency} if args.frequency else {"frequency": "Monthly"}
         )
 
         if args.processed_dataset_path:
@@ -210,15 +216,25 @@ if __name__ == "__main__":
     # packing SFT samples without CrossAttention
     parser.add_argument("--packing_samples", action="store_true", default=False)
 
-    # custom dataset
-    parser.add_argument("--train_dataset_path", type=str, default=None)
-    parser.add_argument("--test_dataset_path", type=str, default=None)
-    parser.add_argument("--metadata_path", type=str, default=None)
-    parser.add_argument("--processed_dataset_path", type=str, default=None, help="If path exists, will load preprocessed dataset. Else will save preprocessed dataset to this path.")
-    # parser.add_argument("--dataset_probs", type=str, default="1.0", help="sampling probs for datasets")
+    # FRED Time Series Dataset parameters - updated to match new approach
+    parser.add_argument("--raw_data_path", type=str, default=None, help="Path to raw FRED dataset CSV file")
+    parser.add_argument("--metadata_path", type=str, default=None, help="Path to metadata CSV file")
+    parser.add_argument("--max_prediction_window", type=int, default=6, 
+                        help="Maximum number of values to predict (actual window size will be randomly chosen between 2 and this value)")
+    parser.add_argument("--context_multiplier", type=int, default=7, 
+                        help="Multiplier to determine context window size (context_window = context_multiplier * prediction_window)")
+    parser.add_argument("--num_eval_chunks", type=int, default=1, 
+                        help="Number of chunks to use for evaluation from each time series")
+    parser.add_argument("--max_cutoff_year", type=int, default=-1, 
+                        help="Only consider data points from this year onwards (set to -1 to disable)")
+    parser.add_argument("--frequency", type=str, default="Monthly", 
+                        help="Frequency of time series data to use (e.g., 'Monthly', 'Quarterly', 'Annual')")
+    parser.add_argument("--processed_dataset_path", type=str, default=None, 
+                        help="If path exists, will load preprocessed dataset. Else will save preprocessed dataset to this path.")
+    
+    # Other dataset parameters
     parser.add_argument("--train_split", type=str, default="train", help="train split of the HF dataset")
     parser.add_argument("--eval_split", type=str, default="test", help="test split of the dataset")
-
     parser.add_argument("--input_key", type=str, default="input", help="JSON dataset key")
     parser.add_argument("--output_key", type=str, default=None, help="JSON dataset key")
     parser.add_argument("--input_template", type=str, default="User: {}\nAssistant: ")
