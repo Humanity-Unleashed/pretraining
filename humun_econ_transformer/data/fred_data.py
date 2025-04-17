@@ -354,6 +354,19 @@ def get_fred_data(
     df['data'] = df['data'].apply(safe_literal_eval)
     df = df.dropna(subset=['data'])
 
+    # Filter dataset by selected series ids from metadata
+    selected_ids = metadata_df["id"].tolist()
+    df = df[df["series_id"].isin(selected_ids)]
+
+    # Merge additional columns from metadata_df into df
+    df = df.merge(
+        metadata_df[["id", "frequency", "units"]],
+        how="left",
+        left_on="series_id",
+        right_on="id"
+    )
+    df = df.drop(columns=["id"])
+
     train_data, test_data = [], []
     skipped_series = 0
     processed_series = 0
@@ -378,7 +391,13 @@ def get_fred_data(
         for history, forecast in train_chunks:
             train_data.append({
                 'series_id': row['series_id'], 
-                'title': row['title'], 
+                'title': row['title'],
+                'frequency': row['frequency'],
+                'units': row['units'],
+                'context_window': len(history),
+                'prediction_window': len(forecast),
+                'forecast_date_start': forecast[0][0],
+                'forecast_date_end': forecast[0][-1],
                 'history': history, 
                 'forecast': forecast
             })
@@ -387,6 +406,12 @@ def get_fred_data(
             test_data.append({
                 'series_id': row['series_id'], 
                 'title': row['title'], 
+                'frequency': row['frequency'],
+                'units': row['units'],
+                'context_window': len(history),
+                'prediction_window': len(forecast),
+                'forecast_date_start': forecast[0][0],
+                'forecast_date_end': forecast[0][-1],
                 'history': history, 
                 'forecast': forecast
             })
@@ -398,19 +423,10 @@ def get_fred_data(
     # Convert to HuggingFace Datasets
     train_dataset = Dataset.from_pandas(pd.DataFrame(train_data))
     test_dataset = Dataset.from_pandas(pd.DataFrame(test_data))
-
-    # Filter dataset by selected series ids from metadata
-    selected_ids = metadata_df["id"].tolist()
-    def matching_id_and_no_missing_values(example):
-        # This is now redundant as we already filtered during processing, but keeping for safety
-        return example["series_id"] in selected_ids
-
+    
     # Log status about filtering
     total_train = len(train_dataset)
     total_test = len(test_dataset)
-    
-    filtered_train_dataset = train_dataset.filter(matching_id_and_no_missing_values)
-    filtered_test_dataset = test_dataset.filter(matching_id_and_no_missing_values)
     
     logging.info(f"Filtered train dataset: {total_train} → {len(filtered_train_dataset)} examples")
     logging.info(f"Filtered test dataset: {total_test} → {len(filtered_test_dataset)} examples")

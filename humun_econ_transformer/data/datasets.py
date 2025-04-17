@@ -6,8 +6,8 @@ from torch.utils.data import Dataset
 
 #@TODO: Don't hardcode this in this script
 SYSTEM_PROMPT = """
-You are an economic time-series forecasting expert. Predict the values at the forecast timestamps given the historical data provided. 
-
+You are an economic time-series forecasting expert. Predict the values at the forecast timestamps given the historical data provided. Here is some additional information that might be helpful:
+You are predicting {title}, which have values given in {units} at a {frequency} frequency. There are {context_window} historical values and you have to predict the next {forecast_window} values from {forecast_date_start} to {forecast_date_end}.
 Only provide the forecast in your response in the format (timestamp, value) in between <forecast> and </forecast> tags. Don't include any other information/comments in your response.
 """
 
@@ -25,9 +25,19 @@ def preprocess_data(data, input_template=None, input_key="history", output_key="
     if apply_chat_template:
         prompt_message = data[input_key]
         response_message = data[output_key]
+        
+        system_message = SYSTEM_PROMPT.format(
+            title=data['title'],
+            units=data['units'],
+            frequency=data['frequency'],
+            context_window=data['context_window'],
+            forecast_window=data['forecast_window'],
+            forecast_date_start=data['forecast_date_start'],
+            forecast_date_end=data['forecast_date_end']
+        )
 
         if isinstance(prompt_message, str) and isinstance(response_message, str):
-            prompt_message = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt_message}]
+            prompt_message = [{"role": "system", "content": system_message}, {"role": "user", "content": prompt_message}]
             response_message = [{"role": "assistant", "content": response_message}]
 
         prompt = apply_chat_template(prompt_message, tokenize=False, add_generation_prompt=True)
