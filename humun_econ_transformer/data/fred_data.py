@@ -174,145 +174,6 @@ def get_fred_data(
         max_prediction_window: Maximum number of values to predict (actual window size will be randomly chosen between 2 and this value).
         context_multiplier: Multiplier to determine context window size (context_window = context_multiplier * prediction_window).
         num_eval_chunks: Number of chunks to use for evaluation from each time series.
-        max_cutoff_year: Training data will only include points before this year, while test data will have forecasts
-                         starting from this year onwards. History values for test can include data from before this year.
-        seed: Random seed to set for dataset shuffling.
-        max_count: Maximum number of samples to include in the dataset.
-        filters: Dictionary of column:value pairs to filter metadata on.
-
-    Returns:
-        HuggingFace Dataset for train and test.
-    """
-    # Set random seed for reproducibility
-    random.seed(seed)
-    
-    # Read metadata and apply filters
-    metadata_df = pd.read_csv(metadata_path)
-
-    for column, value in filters.items():
-        if column in metadata_df.columns:
-            # For string columns, do a case-insensitive comparison
-            if metadata_df[column].dtype == "object":
-                metadata_df = metadata_df[
-                    metadata_df[column].str.lower() == str(value).lower()
-                ]
-            else:
-                metadata_df = metadata_df[metadata_df[column] == value]
-        else:
-            raise ValueError(f"Erroneous filter provided: {column}")
-    
-    # Read and process the raw dataset
-    df = pd.read_csv(raw_dataset_path)
-    
-    def safe_literal_eval(x):
-        if isinstance(x, str):
-            try:
-                return ast.literal_eval(x)
-            except (ValueError, SyntaxError) as e:
-                logging.warning(f"Skipping invalid entry: {x} - Error: {e}")
-                return None  # Return original value if parsing fails
-        return x
-
-    df['data'] = df['data'].apply(safe_literal_eval)
-    df = df.dropna(subset=['data'])
-
-    train_data, test_data = [], []
-    skipped_series = 0
-    processed_series = 0
-    
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing time series"):
-        train_chunks, test_chunks = process_series(
-            row['series_id'], 
-            row['title'], 
-            row['data'], 
-            max_prediction_window, 
-            context_multiplier, 
-            num_eval_chunks, 
-            max_cutoff_year
-        )
-        
-        if not train_chunks and not test_chunks:
-            skipped_series += 1
-            continue
-            
-        processed_series += 1
-        
-        for history, forecast in train_chunks:
-            train_data.append({
-                'series_id': row['series_id'], 
-                'title': row['title'], 
-                'history': history, 
-                'forecast': forecast
-            })
-        
-        for history, forecast in test_chunks:
-            test_data.append({
-                'series_id': row['series_id'], 
-                'title': row['title'], 
-                'history': history, 
-                'forecast': forecast
-            })
-    
-    # Log processing statistics
-    logging.info(f"Processed {processed_series} time series, skipped {skipped_series} time series")
-    logging.info(f"Created {len(train_data)} training examples and {len(test_data)} test examples")
-    
-    # Convert to HuggingFace Datasets
-    train_dataset = Dataset.from_pandas(pd.DataFrame(train_data))
-    test_dataset = Dataset.from_pandas(pd.DataFrame(test_data))
-
-    # Filter dataset by selected series ids from metadata
-    selected_ids = metadata_df["id"].tolist()
-    def matching_id_and_no_missing_values(example):
-        # This is now redundant as we already filtered during processing, but keeping for safety
-        return example["series_id"] in selected_ids
-
-    # Log status about filtering
-    total_train = len(train_dataset)
-    total_test = len(test_dataset)
-    
-    filtered_train_dataset = train_dataset.filter(matching_id_and_no_missing_values)
-    filtered_test_dataset = test_dataset.filter(matching_id_and_no_missing_values)
-    
-    logging.info(f"Filtered train dataset: {total_train} → {len(filtered_train_dataset)} examples")
-    logging.info(f"Filtered test dataset: {total_test} → {len(filtered_test_dataset)} examples")
-
-    # Convert list of time series values to newline-separated values, with forecast timestamps included in history
-    filtered_train_dataset = filtered_train_dataset.map(convert_history_and_forecast_str)
-    filtered_test_dataset = filtered_test_dataset.map(convert_history_and_forecast_str)
-
-    # Limit dataset size if needed
-    train_dataset = filtered_train_dataset.select(range(min(max_count, len(filtered_train_dataset))))
-    test_dataset = filtered_test_dataset.select(range(min(max_count, len(filtered_test_dataset))))
-    
-    # Shuffle the datasets
-    train_dataset = train_dataset.shuffle(seed=seed)
-    test_dataset = test_dataset.shuffle(seed=seed)
-    
-    return train_dataset, test_dataset
-
-def get_fred_data(
-    raw_dataset_path: str,
-    metadata_path: str,
-    max_prediction_window: int,
-    context_multiplier: int,
-    num_eval_chunks: int,
-    max_cutoff_year: int = None,
-    seed=42,
-    max_count=5000000,
-    filters: Dict = {"frequency": "Monthly"},  # Default to Monthly
-):
-    """
-    Loads FRED time series CSV file and metadata file and returns a HuggingFace Dataset for training and evaluation.
-    Processes raw data into chunks with variable prediction windows and context sizes.
-    Converts 'history' and 'forecast' columns from lists of tuples to strings.
-
-    Args:
-        raw_dataset_path: Path to raw dataset CSV file with time series data.
-        metadata_path: Path to metadata CSV file.
-        max_prediction_window: Maximum number of values to predict (actual window size will be randomly chosen between 2 and this value).
-        context_multiplier: Multiplier to determine context window size (context_window = context_multiplier * prediction_window).
-        num_eval_chunks: Number of chunks to use for evaluation from each time series.
         max_cutoff_year: Only consider forecast data points from this year onwards for test set (optional).
         seed: Random seed to set for dataset shuffling.
         max_count: Maximum number of samples to include in the dataset.
@@ -395,9 +256,9 @@ def get_fred_data(
                 'frequency': row['frequency'],
                 'units': row['units'],
                 'context_window': len(history),
-                'prediction_window': len(forecast),
+                'forecast_window': len(forecast),
                 'forecast_date_start': forecast[0][0],
-                'forecast_date_end': forecast[0][-1],
+                'forecast_date_end': forecast[-1][0],
                 'history': history, 
                 'forecast': forecast
             })
@@ -409,7 +270,7 @@ def get_fred_data(
                 'frequency': row['frequency'],
                 'units': row['units'],
                 'context_window': len(history),
-                'prediction_window': len(forecast),
+                'forecast_window': len(forecast),
                 'forecast_date_start': forecast[0][0],
                 'forecast_date_end': forecast[0][-1],
                 'history': history, 
@@ -423,17 +284,10 @@ def get_fred_data(
     # Convert to HuggingFace Datasets
     train_dataset = Dataset.from_pandas(pd.DataFrame(train_data))
     test_dataset = Dataset.from_pandas(pd.DataFrame(test_data))
-    
-    # Log status about filtering
-    total_train = len(train_dataset)
-    total_test = len(test_dataset)
-    
-    logging.info(f"Filtered train dataset: {total_train} → {len(filtered_train_dataset)} examples")
-    logging.info(f"Filtered test dataset: {total_test} → {len(filtered_test_dataset)} examples")
 
     # Convert list of time series values to newline-separated values, with forecast timestamps included in history
-    filtered_train_dataset = filtered_train_dataset.map(convert_history_and_forecast_str)
-    filtered_test_dataset = filtered_test_dataset.map(convert_history_and_forecast_str)
+    filtered_train_dataset = train_dataset.map(convert_history_and_forecast_str)
+    filtered_test_dataset = test_dataset.map(convert_history_and_forecast_str)
 
     # Limit dataset size if needed
     train_dataset = filtered_train_dataset.select(range(min(max_count, len(filtered_train_dataset))))
